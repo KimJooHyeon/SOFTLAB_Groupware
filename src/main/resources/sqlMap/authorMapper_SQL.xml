@@ -10,7 +10,7 @@
    2) result : 유일한 것(기본키) 이외
 -->
 
-<mapper namespace="kr.or.ddit.author.mapper.AuthorMapper">
+<mapper namespace="com.kjh.author.mapper.AuthorMapper">
 	
 	<!-- 권한 목록-->
 	<select id="selectAuthor" resultType="hashMap">

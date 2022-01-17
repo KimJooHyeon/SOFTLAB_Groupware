@@ -11,7 +11,7 @@
 	</appender>
 	
 	<!-- Application Loggers -->
-	<logger name="kr.or.ddit">
+	<logger name="com.kjh">
 		<level value="info" />
 	</logger>
 	

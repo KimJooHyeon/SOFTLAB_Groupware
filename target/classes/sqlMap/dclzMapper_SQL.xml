@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
   
-<mapper namespace="kr.or.ddit.dclz.mapper.DclzMapper">
+<mapper namespace="com.kjh.dclz.mapper.DclzMapper">
 	<resultMap type="dclzVO" id="dclzMap">
 	<id column="DCLZ_SN" property="dclzSn"/> <!-- id : pk 멤버변수 -->
 	<result column="EMP_NO" property="empNo"/> <!-- pk이외의 멤버변수 -->

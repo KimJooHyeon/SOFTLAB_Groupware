@@ -9,7 +9,7 @@
    1) id : 객체 인스턴스 비교 시 사용되는 구분자 프로퍼티(기본키)
    2) result : 유일한 것(기본키) 이외
 -->
-<mapper namespace="kr.or.ddit.mapper.UtilMapper">
+<mapper namespace="com.kjh.mapper.UtilMapper">
 	<!-- 상품별 판매금액의 합계 목록 -->
 	<select id="test" resultType="int">
 		SELECT 1 + 1 as col1 FROM DUAL

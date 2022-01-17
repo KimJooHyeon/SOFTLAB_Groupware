@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="kr.or.ddit.mtgr.mapper.MtgrMapper">
+<mapper namespace="com.kjh.mtgr.mapper.MtgrMapper">
 	<!-- 
 * id와 result
 - 공통점 : 검색 결과의 한개의 컬럼을 한개의 프로퍼티에 매핑

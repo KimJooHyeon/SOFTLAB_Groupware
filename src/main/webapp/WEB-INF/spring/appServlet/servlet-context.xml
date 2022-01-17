@@ -39,7 +39,7 @@
 	</beans:bean>
 	<!-- Tiles 설정 끝 -->
 	
-	<context:component-scan base-package="kr.or.ddit" />
+	<context:component-scan base-package="com.kjh" />
 
 	<!-- Interceptors -->
 	<interceptors>
@@ -50,14 +50,14 @@
 			<exclude-mapping path="/loginCheck"/>
 			<!-- defaultServlet이 처리하는 경로는 제외 -->
             <exclude-mapping path="/assets/**"/>
-			<beans:bean class="kr.or.ddit.login.interceptor.AuthInterceptor" />
+			<beans:bean class="com.kjh.login.interceptor.AuthInterceptor" />
 		</interceptor>
 	</interceptors>
 
 	<annotation-driven>
 		<!-- argument resolver -->
 		<argument-resolvers>
-			<beans:bean class="kr.or.ddit.login.interceptor.AuthUserHandlerMethodArgumentResolver" />
+			<beans:bean class="com.kjh.login.interceptor.AuthUserHandlerMethodArgumentResolver" />
 		</argument-resolvers>
 	</annotation-driven>
 	

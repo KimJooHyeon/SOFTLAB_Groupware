@@ -9,7 +9,7 @@
    1) id : 객체 인스턴스 비교 시 사용되는 구분자 프로퍼티(기본키)
    2) result : 유일한 것(기본키) 이외
 -->
-<mapper namespace="kr.or.ddit.hr.mapper.EmpMapper">
+<mapper namespace="com.kjh.hr.mapper.EmpMapper">
 	
 	<!-- 재직자 직원목록 -->
 	<select id="selectIng" resultType="hashMap" parameterType="hashMap">

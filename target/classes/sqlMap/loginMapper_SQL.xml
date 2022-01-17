@@ -10,7 +10,7 @@
    2) result : 유일한 것(기본키) 이외
 -->
 
-<mapper namespace="kr.or.ddit.login.mapper.LoginMapper">
+<mapper namespace="com.kjh.login.mapper.LoginMapper">
 	
 	<!-- 로그인 체크 -->
 	<select id="get" parameterType="empVO" resultType="empVO">

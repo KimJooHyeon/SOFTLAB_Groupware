@@ -16,39 +16,39 @@
 	
 	<!-- 자주 사용하는 타입의 별칭 -->
 	<typeAliases>
-		<typeAlias type="kr.or.ddit.author.vo.AuthorEmpVO" alias="authorEmpVO"/>
-		<typeAlias type="kr.or.ddit.author.vo.AuthorVO" alias="authorVO"/>
+		<typeAlias type="com.kjh.author.vo.AuthorEmpVO" alias="authorEmpVO"/>
+		<typeAlias type="com.kjh.author.vo.AuthorVO" alias="authorVO"/>
 
-		<typeAlias type="kr.or.ddit.bbs.vo.AnswerVO" alias="answerVO"/>
-		<typeAlias type="kr.or.ddit.bbs.vo.BbsVO" alias="bbsVO"/>
+		<typeAlias type="com.kjh.bbs.vo.AnswerVO" alias="answerVO"/>
+		<typeAlias type="com.kjh.bbs.vo.BbsVO" alias="bbsVO"/>
 
-		<typeAlias type="kr.or.ddit.common.vo.AtchmnflVO" alias="atchmnflVO"/>
-		<typeAlias type="kr.or.ddit.common.vo.CmmncodeVO" alias="cmmncodeVO"/>
+		<typeAlias type="com.kjh.common.vo.AtchmnflVO" alias="atchmnflVO"/>
+		<typeAlias type="com.kjh.common.vo.CmmncodeVO" alias="cmmncodeVO"/>
 
-		<typeAlias type="kr.or.ddit.dclz.vo.BsrpVO" alias="bsrpVO"/>
-		<typeAlias type="kr.or.ddit.dclz.vo.DclzVO" alias="dclzVO"/>
-		<typeAlias type="kr.or.ddit.dclz.vo.RestdeVO" alias="restdeVO"/>
-		<typeAlias type="kr.or.ddit.dclz.vo.VcatnVO" alias="vcatnVO"/>
-		<typeAlias type="kr.or.ddit.dclz.vo.YrycVO" alias="yrycVO"/>
+		<typeAlias type="com.kjh.dclz.vo.BsrpVO" alias="bsrpVO"/>
+		<typeAlias type="com.kjh.dclz.vo.DclzVO" alias="dclzVO"/>
+		<typeAlias type="com.kjh.dclz.vo.RestdeVO" alias="restdeVO"/>
+		<typeAlias type="com.kjh.dclz.vo.VcatnVO" alias="vcatnVO"/>
+		<typeAlias type="com.kjh.dclz.vo.YrycVO" alias="yrycVO"/>
 
-		<typeAlias type="kr.or.ddit.hr.vo.CrtfreqstVO" alias="crtfreqstVO"/>
-		<typeAlias type="kr.or.ddit.hr.vo.DeptVO" alias="deptVO"/>
-		<typeAlias type="kr.or.ddit.hr.vo.EmpVO" alias="empVO"/>
+		<typeAlias type="com.kjh.hr.vo.CrtfreqstVO" alias="crtfreqstVO"/>
+		<typeAlias type="com.kjh.hr.vo.DeptVO" alias="deptVO"/>
+		<typeAlias type="com.kjh.hr.vo.EmpVO" alias="empVO"/>
 		
-		<typeAlias type="kr.or.ddit.mtgr.vo.MtgrResveVO" alias="mtgrResveVO"/>
-		<typeAlias type="kr.or.ddit.mtgr.vo.MtgrVO" alias="mtgrVO"/>
-		<typeAlias type="kr.or.ddit.mtgr.vo.ReservationCalendarVO" alias="reservationCalendarVO"/>
-		<typeAlias type="kr.or.ddit.mtgr.vo.ReservationExtendedPropsVO" alias="reservationExtendedPropsVO"/>
+		<typeAlias type="com.kjh.mtgr.vo.MtgrResveVO" alias="mtgrResveVO"/>
+		<typeAlias type="com.kjh.mtgr.vo.MtgrVO" alias="mtgrVO"/>
+		<typeAlias type="com.kjh.mtgr.vo.ReservationCalendarVO" alias="reservationCalendarVO"/>
+		<typeAlias type="com.kjh.mtgr.vo.ReservationExtendedPropsVO" alias="reservationExtendedPropsVO"/>
 
-		<typeAlias type="kr.or.ddit.sanction.vo.CcVO" alias="ccVO"/>
-		<typeAlias type="kr.or.ddit.sanction.vo.DrftFormVO" alias="drftFormVO"/>
-		<typeAlias type="kr.or.ddit.sanction.vo.DrftSeVO" alias="drftSeVO"/>
-		<typeAlias type="kr.or.ddit.sanction.vo.ElctrnSanctnVO" alias="elctrnSanctnVO"/>
-		<typeAlias type="kr.or.ddit.sanction.vo.SanctnLineVO" alias="sanctnLineVO"/>		
+		<typeAlias type="com.kjh.sanction.vo.CcVO" alias="ccVO"/>
+		<typeAlias type="com.kjh.sanction.vo.DrftFormVO" alias="drftFormVO"/>
+		<typeAlias type="com.kjh.sanction.vo.DrftSeVO" alias="drftSeVO"/>
+		<typeAlias type="com.kjh.sanction.vo.ElctrnSanctnVO" alias="elctrnSanctnVO"/>
+		<typeAlias type="com.kjh.sanction.vo.SanctnLineVO" alias="sanctnLineVO"/>		
 		
-		<typeAlias type="kr.or.ddit.schdul.vo.SchdulVO" alias="schdulVO"/>
-		<typeAlias type="kr.or.ddit.schdul.vo.CalendarVO" alias="calendarVO"/>
-		<typeAlias type="kr.or.ddit.schdul.vo.ExtendedPropsVO" alias="extendedPropsVO"/>
+		<typeAlias type="com.kjh.schdul.vo.SchdulVO" alias="schdulVO"/>
+		<typeAlias type="com.kjh.schdul.vo.CalendarVO" alias="calendarVO"/>
+		<typeAlias type="com.kjh.schdul.vo.ExtendedPropsVO" alias="extendedPropsVO"/>
 		
 	</typeAliases>
 </configuration>
