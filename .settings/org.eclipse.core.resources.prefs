@@ -1,0 +1,7 @@
+eclipse.preferences.version=1
+encoding//src/main/java/kr/or/ddit/hr/controller/EmpController.java=UTF-8
+encoding//src/main/java/kr/or/ddit/sanction/controller/SanctionController.java=UTF-8
+encoding//src/main/webapp/WEB-INF/views/bbs/noticeWriteForm.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/views/hr/empAddForm.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/views/hr/empEditForm.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/views/notiles/error.jsp=UTF-8

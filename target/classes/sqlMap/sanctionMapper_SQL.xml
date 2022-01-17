@@ -1,0 +1,1372 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.ddit.sanction.mapper.SanctionMapper">
+	<!-- select => Map / etc => VO -->
+	<resultMap type="drftFormVO" id="formMap">
+		<id property="drftFormSn" column="DRFT_FORM_SN" />
+		<result property="formNm" column="FORM_NM" />
+		<result property="drftCn" column="DRFT_CN" />
+		<result property="drftSeCode" column="DRFT_SE_CODE" jdbcType="CLOB" javaType="java.lang.String" />
+	</resultMap>
+
+	<resultMap type="elctrnSanctnVO" id="sanctnMap">
+		<id property="elctrnSanctnSn" column="ELCTRN_SANCTN_SN" />
+		<result property="empNo" column="EMP_NO" />
+		<result property="docSj" column="DOC_SJ" />
+		<result property="docCn" column="DOC_CN" jdbcType="CLOB" javaType="java.lang.String" />
+		<result property="drftDe" column="DRFT_DE" />
+		<result property="sanctnComptDe" column="SANCTN_COMPT_DE" />
+		<result property="lastSttusCode" column="LAST_STTUS_CODE" />
+		<result property="dsplayAt" column="DSPLAY_AT" />
+		<result property="fileSn" column="FILE_SN" />
+		<result property="deleteYn" column="DELETE_YN" />
+		<result property="rtrvlAt" column="RTRVL_AT" />
+		<result property="tmprAt" column="TMPR_AT" />
+		<result property="sanctnFormCode" column="SANCTN_FORM_CODE" />
+		<result property="step" column="step" />
+		<result property="sanctnMthCode" column="SANCTN_MTH_CODE" />
+		<result property="sanctnDe" column="SANCTN_DE" />
+		<result property="sanctnSttusCode" column="SANCTN_STTUS_CODE" />
+		<result property="returnPrvonsh" column="RETURN_PRVONSH" />
+		<result property="cnfirmAt" column="CNFIRM_AT" />
+	</resultMap>
+
+	<!-- ** 양식 -->
+	<!-- 1. 양식 목록 조회 -->
+	<select id="formList" resultType="hashMap">
+		SELECT ROW_NUMBER() OVER (ORDER BY A.DRFT_FORM_SN ASC) RNUM, 
+		       A.DRFT_FORM_SN, A.FORM_NM, B.DRFT_SE_NM, A.FORM_DEPT,
+		       (SELECT DRFT_SE_NM FROM DRFT_SE WHERE DRFT_SE_CODE = B.UPPER_DRFT_SE_CODE) UPPER_DRFT_SE_CODE
+		FROM   DRFTFORM A, DRFT_SE B
+		WHERE  A.DRFT_SE_CODE = B.DRFT_SE_CODE
+	</select>
+
+	<!-- 2. 양식 검색 -->
+	<select id="formSearch" parameterType="String" resultType="hashMap">
+		SELECT ROW_NUMBER() OVER (ORDER BY A.DRFT_FORM_SN ASC) RNUM, 
+		       A.DRFT_FORM_SN, A.FORM_NM, B.DRFT_SE_NM, A.FORM_DEPT,
+		       (SELECT DRFT_SE_NM FROM DRFT_SE WHERE DRFT_SE_CODE = B.UPPER_DRFT_SE_CODE) UPPER_DRFT_SE_CODE
+		FROM   DRFTFORM A, DRFT_SE B
+		WHERE  A.DRFT_SE_CODE = B.DRFT_SE_CODE
+		<if test="keyword != null and keyword != ''">
+			AND REPLACE(FORM_NM,' ','') LIKE '%'||#{keyword}||'%'
+		</if>
+	</select>
+
+	<!-- 3. 양식 상세 조회 -->
+	<select id="formDetail" parameterType="int" resultMap="formMap">
+		SELECT
+			DRFT_FORM_SN, FORM_NM, DRFT_CN
+		FROM DRFTFORM
+		WHERE DRFT_FORM_SN = #{drftFormSn}
+	</select>
+	
+	<!-- 4. 결재양식명 구하기 -->
+	<select id="formName" parameterType="int" resultType="String">
+		SELECT FN_GETSANCTNFORM(SANCTN_FORM_CODE) SANCTN_NM 
+		FROM ELCTRNSANCTN
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+	</select>
+
+	<!-- ** 임시저장 -->
+	<!-- 1. 임시저장 문서 목록 조회 -->
+	<select id="tmprList" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT
+					ROW_NUMBER() OVER (ORDER BY A.ELCTRN_SANCTN_SN DESC) RNUM, A.ELCTRN_SANCTN_SN,
+					A.EMP_NO,
+					A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'YYYY-MM-DD HH24:mi') DRFT_DE, B.EMP_NM, C.DEPT_NM
+				FROM ELCTRNSANCTN A, EMP B, DEPT C
+				WHERE A.EMP_NO = B.EMP_NO
+					AND B.DEPT_CODE = C.DEPT_CODE
+					AND A.TMPR_AT = 'Y'
+					AND A.EMP_NO = #{empNo}) T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+
+	<!-- 2. 임시저장 문서 상세 조회 -->
+	<select id="tmprDetail" parameterType="elctrnSanctnVO" resultMap="sanctnMap">
+		SELECT
+			A.ELCTRN_SANCTN_SN, A.EMP_NO, A.DOC_SJ,
+			A.DOC_CN, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd hh24:mi') DRFT_DE, B.EMP_NM, C.DEPT_NM
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND A.ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+			AND A.DELETE_YN = 'N'
+			AND A.RTRVL_AT = 'N'
+			AND A.TMPR_AT = 'Y'
+			AND A.EMP_NO = #{empNo}
+	</select>
+
+	<!-- 3. 임시저장 문서 추가 -->
+	<insert id="tmprAdd" parameterType="hashMap">
+		<selectKey order="BEFORE" resultType="int" keyProperty="elctrnSanctnSn">
+			SELECT NVL(MAX(ELCTRN_SANCTN_SN),0)+1 FROM ELCTRNSANCTN
+		</selectKey>
+		INSERT INTO ELCTRNSANCTN (
+			ELCTRN_SANCTN_SN, EMP_NO, DOC_SJ, DOC_CN, TMPR_AT, FILE_SN
+		) VALUES (
+			#{elctrnSanctnSn}, #{empNo}, #{docSj}, #{docCn}, 'Y', 0
+		)
+	</insert>
+
+	<!-- 4. 임시저장 문서 수정 -->
+	<update id="tmprAtModify" parameterType="hashMap">
+		UPDATE ELCTRNSANCTN
+		SET
+			DOC_SJ = #{docSj},
+			DOC_CN = #{docCn},
+			DRFT_DE = SYSDATE
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+			AND TMPR_AT = 'Y'
+	</update>
+
+	<!-- 5. 임시저장 문서 여부 판단 -->
+	<select id="tmprAt" parameterType="int" resultType="int">
+		SELECT COUNT(*) 
+		FROM ELCTRNSANCTN 
+		WHERE TMPR_AT = 'Y' 
+		    AND ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+	</select>
+
+	<!-- 6. 임시저장 문서 삭제 -->
+	<delete id="tmprDelete" parameterType="int">
+		DELETE FROM ELCTRNSANCTN
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		AND TMPR_AT = 'Y'
+	</delete>
+	
+	<!-- 7. 임시저장 문서 개수 조회 -->
+	<select id="tmprListCount" parameterType="String" resultType="int">
+        SELECT COUNT(*)
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND A.TMPR_AT = 'Y'
+			AND A.EMP_NO = #{empNo}
+	</select>
+	
+	<!-- 8. 임시저장 문서 목록 검색 -->
+	<select id="tmprSearch" parameterType="hashMap" resultType="hashMap">
+		<![CDATA[
+			SELECT T.*
+			FROM (SELECT
+				    ROW_NUMBER() OVER (ORDER BY A.ELCTRN_SANCTN_SN DESC) RNUM, A.ELCTRN_SANCTN_SN, A.EMP_NO,
+				    A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, B.EMP_NM, C.DEPT_NM
+				FROM ELCTRNSANCTN A, EMP B, DEPT C
+				WHERE A.EMP_NO = B.EMP_NO
+				    AND B.DEPT_CODE = C.DEPT_CODE
+			        AND A.TMPR_AT = 'Y'
+				    AND A.EMP_NO = #{empNo}
+					AND A.DOC_SJ LIKE '%'||#{keyword}||'%') T
+			WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+		]]>
+	</select>
+	
+	<!-- 9. 임시저장 문서 목록 검색 개수 조회 -->
+	<select id="tmprSearchCount" parameterType="hashMap" resultType="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM ELCTRNSANCTN A, EMP B, DEPT C
+			WHERE A.EMP_NO = B.EMP_NO
+			    AND B.DEPT_CODE = C.DEPT_CODE
+		        AND A.TMPR_AT = 'Y'
+			    AND A.EMP_NO = #{empNo}
+				AND A.DOC_SJ LIKE '%'||#{keyword}||'%'
+		]]>
+	</select>
+	
+
+
+	<!-- ** 전자결재 -->
+	<!-- 1. 결재요청 -->
+	<!-- 1-1. 결재 요청 문서 목록 조회 -->
+	<select id="requestList" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.DRFT_DE DESC) RNUM,
+					A.ELCTRN_SANCTN_SN, A.EMP_NO, TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd
+					HH24:mi') SANCTN_COMPT_DE,
+					A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE , B.EMP_NM,
+					C.DEPT_NM
+				FROM ELCTRNSANCTN A, EMP B, DEPT C
+				WHERE A.EMP_NO = B.EMP_NO
+					AND B.DEPT_CODE = C.DEPT_CODE
+					AND A.LAST_STTUS_CODE IS NULL
+					AND A.DELETE_YN = 'N'
+					AND A.RTRVL_AT = 'N'
+					AND A.TMPR_AT = 'N'
+					AND A.EMP_NO = #{empNo}) T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+
+	<!-- 1-2. 결재 요청 문서 개수 조회 (기안자) -->
+	<select id="requestListCount" parameterType="String" resultType="int">
+		SELECT COUNT(*)
+		FROM ELCTRNSANCTN
+		WHERE LAST_STTUS_CODE IS NULL
+			AND DELETE_YN = 'N'
+			AND RTRVL_AT = 'N'
+			AND TMPR_AT = 'N'
+			AND EMP_NO = #{empNo}
+	</select>
+
+	<!-- 1-3. 결재 요청 문서 상세 조회 -->
+	<select id="requestDetail" parameterType="elctrnSanctnVO" resultMap="sanctnMap">
+		SELECT A.ELCTRN_SANCTN_SN, A.EMP_NO,
+			TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+			A.DOC_SJ, A.DOC_CN, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE ,
+			B.EMP_NM, C.DEPT_NM, A.FILE_SN
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND A.ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+			AND A.LAST_STTUS_CODE IS NULL
+			AND A.EMP_NO = #{empNo}
+	</select>
+
+	<!-- 1-4. 결재 요청 문서 목록 검색 -->
+	<select id="requestSearch" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.DRFT_DE DESC) RNUM,
+				A.ELCTRN_SANCTN_SN, A.EMP_NO, TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd
+				HH24:mi') SANCTN_COMPT_DE,
+				A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE , B.EMP_NM,
+				C.DEPT_NM
+				FROM ELCTRNSANCTN A, EMP B, DEPT C
+				WHERE A.EMP_NO = B.EMP_NO
+				AND B.DEPT_CODE = C.DEPT_CODE
+				AND A.LAST_STTUS_CODE IS NULL
+				AND A.DELETE_YN = 'N'
+				AND A.RTRVL_AT = 'N'
+				AND A.TMPR_AT = 'N'
+				AND A.EMP_NO = #{empNo}
+				AND A.DOC_SJ LIKE '%'||#{keyword}||'%') T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+	
+	<!-- 1-5. 결재 요청 문서 목록 검색 개수 조회 -->
+	<select id="requestSearchCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		AND B.DEPT_CODE = C.DEPT_CODE
+		AND A.LAST_STTUS_CODE IS NULL
+		AND A.DELETE_YN = 'N'
+		AND A.RTRVL_AT = 'N'
+		AND A.TMPR_AT = 'N'
+		AND A.EMP_NO = #{empNo}
+		AND A.DOC_SJ LIKE '%'||#{keyword}||'%'
+	</select>
+
+	<!-- 2. 결재대기 -->
+	<!-- 2-1. 결재 대기 문서 목록 조회) -->
+	<select id="waitList" parameterType="hashMap" resultType="hashMap">
+		SELECT X.*
+		FROM (WITH T AS(
+				    SELECT A.ELCTRN_SANCTN_SN, A.STEP, A.STEP-1 AS BFSTEP, A.EMP_NO, A.SANCTN_MTH_CODE, TO_CHAR(A.SANCTN_DE, 'yyyy-MM-dd hh24:mi') AS SANCTN_DE,
+				           A.SANCTN_STTUS_CODE, A.RETURN_PRVONSH, 
+				           (SELECT B.SANCTN_DE FROM SANCTNLINE B WHERE B.ELCTRN_SANCTN_SN = A.ELCTRN_SANCTN_SN AND B.STEP = A.STEP-1) BFSTEP_SANCTN_DE
+				    FROM   SANCTNLINE A
+				    WHERE  A.STEP != 1
+				    AND    A.EMP_NO = #{empNo}
+				)
+				SELECT ROW_NUMBER() OVER (ORDER BY T.BFSTEP_SANCTN_DE DESC) RNUM, T.ELCTRN_SANCTN_SN, A.EMP_NO, B.EMP_NM, C.DEPT_NM,
+				       FN_GETSANCTNMTH(T.SANCTN_STTUS_CODE), A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd hh24:mi') DRFT_DE, TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd hh24:mi') SANCTN_COMPT_DE
+				FROM T, ELCTRNSANCTN A, EMP B, DEPT C
+				WHERE T.ELCTRN_SANCTN_SN = A.ELCTRN_SANCTN_SN
+				    AND A.EMP_NO = B.EMP_NO
+				    AND B.DEPT_CODE = C.DEPT_CODE
+				    AND A.DELETE_YN = 'N'
+				    AND A.LAST_STTUS_CODE IS NULL
+				    AND T.BFSTEP_SANCTN_DE IS NOT NULL
+				    AND T.SANCTN_DE IS NULL) X
+		WHERE X.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+
+	<!-- 2-2. 결재 대기 문서 상세 조회 -->
+	<select id="waitDetail" parameterType="elctrnSanctnVO" resultMap="sanctnMap">
+		WITH T AS(
+		    SELECT A.ELCTRN_SANCTN_SN, A.STEP, A.STEP-1 AS BFSTEP, A.EMP_NO,
+		        FN_GETSANCTNMTH(A.SANCTN_MTH_CODE) AS SANCTN_MTH_CODE, 
+		        TO_CHAR(A.SANCTN_DE, 'yyyy-MM-dd HH24:mi') AS SANCTN_DE,
+		        FN_GETSANCTNSTTUS(A.SANCTN_STTUS_CODE) AS SANCTN_STTUS_CODE, 
+		        A.RETURN_PRVONSH,
+		        (SELECT B.SANCTN_DE FROM SANCTNLINE B WHERE B.ELCTRN_SANCTN_SN =
+		        A.ELCTRN_SANCTN_SN AND B.STEP = A.STEP-1) BFSTEP_SANCTN_DE
+		    FROM SANCTNLINE A
+		    WHERE A.STEP != 1
+		        AND A.EMP_NO = #{empNo}
+		    )
+		    SELECT A.ELCTRN_SANCTN_SN, A.EMP_NO, B.EMP_NM, C.DEPT_NM, A.DOC_SJ, A.DOC_CN,
+		           TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, 
+		           TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+		           FN_GETLASTSTTUSCODE(A.LAST_STTUS_CODE) AS LAST_STTUS_CODE, A.DSPLAY_AT,
+		           FN_GETSANCTNFORM(A.SANCTN_FORM_CODE) AS SANCTN_FORM_CODE, A.FILE_SN
+		    FROM T, ELCTRNSANCTN A, EMP B, DEPT C
+		    WHERE T.ELCTRN_SANCTN_SN = A.ELCTRN_SANCTN_SN
+		        AND T.EMP_NO = B.EMP_NO
+		        AND B.DEPT_CODE = C.DEPT_CODE
+		        AND A.ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		        AND A.DELETE_YN = 'N'
+		        AND A.LAST_STTUS_CODE IS NULL
+		        AND T.BFSTEP_SANCTN_DE IS NOT NULL
+		        AND T.SANCTN_DE IS NULL
+	</select>
+
+	<!-- 2-3. 결재 대기 문서 개수 조회 (결재자) -->
+	<select id="waitListCount" parameterType="String" resultType="int">
+	<![CDATA[
+		SELECT COUNT(*)
+		FROM (WITH T AS(
+		        SELECT A.ELCTRN_SANCTN_SN, A.STEP, A.STEP-1 AS BFSTEP, A.EMP_NO, A.SANCTN_MTH_CODE, TO_CHAR(A.SANCTN_DE, 'yyyy-MM-dd HH24:mi') AS SANCTN_DE,
+		               A.SANCTN_STTUS_CODE, A.RETURN_PRVONSH, 
+		               (SELECT B.SANCTN_DE FROM SANCTNLINE B 
+		                WHERE B.ELCTRN_SANCTN_SN = A.ELCTRN_SANCTN_SN 
+		                AND B.STEP = A.STEP-1) BFSTEP_SANCTN_DE
+		        FROM SANCTNLINE A
+		        WHERE A.STEP != 1
+		        AND A.EMP_NO = #{empNo}
+		    )
+		    SELECT ROW_NUMBER() OVER (ORDER BY T.BFSTEP_SANCTN_DE DESC) RNUM, T.*, B.EMP_NM, C.DEPT_NM,
+		           FN_GETSANCTNMTH(T.SANCTN_STTUS_CODE), A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, A.SANCTN_COMPT_DE
+		    FROM T, ELCTRNSANCTN A, EMP B, DEPT C
+		    WHERE T.ELCTRN_SANCTN_SN = A.ELCTRN_SANCTN_SN
+		        AND T.EMP_NO = B.EMP_NO
+		        AND B.DEPT_CODE = C.DEPT_CODE
+		        AND A.DELETE_YN = 'N'
+		        AND A.LAST_STTUS_CODE IS NULL
+		        AND T.BFSTEP_SANCTN_DE IS NOT NULL
+		        AND T.SANCTN_DE IS NULL)
+	]]>
+	</select>
+
+	<!-- 2-4. 결재 대기 문서 목록 검색 -->
+	<select id="waitSearch" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.DRFT_DE DESC) RNUM,
+				A.ELCTRN_SANCTN_SN,
+				A.EMP_NO, A.DOC_SJ, A.DRFT_DE,
+				A.EMP_NM, A.DEPT_NM
+			FROM (SELECT A.ELCTRN_SANCTN_SN, A.STEP, A.EMP_NO,
+					FN_GETSANCTNMTH(A.SANCTN_STTUS_CODE),
+					A.RETURN_PRVONSH,
+					B.DOC_SJ, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, TO_CHAR(B.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+					C.EMP_NM, D.DEPT_NM
+				FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+				WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+					AND B.EMP_NO = C.EMP_NO
+					AND C.DEPT_CODE = D.DEPT_CODE
+					AND B.DELETE_YN = 'N'
+					AND A.EMP_NO = #{empNo}
+					AND A.SANCTN_DE IS NULL
+					AND (B.LAST_STTUS_CODE IS NULL OR B.LAST_STTUS_CODE != 'L2')
+					AND A.STEP != 1) A
+			WHERE A.DOC_SJ LIKE '%'||#{keyword}||'%') T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+	
+	<!-- 2-5. 결재 대기 문서 목록 검색 개수 조회 -->
+	<select id="waitSearchCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM (SELECT A.ELCTRN_SANCTN_SN, A.STEP, A.EMP_NO,
+				FN_GETSANCTNMTH(A.SANCTN_STTUS_CODE),
+				A.RETURN_PRVONSH,
+				B.DOC_SJ, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, TO_CHAR(B.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+				C.EMP_NM, D.DEPT_NM
+			FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+			WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+				AND B.EMP_NO = C.EMP_NO
+				AND C.DEPT_CODE = D.DEPT_CODE
+				AND B.DELETE_YN = 'N'
+				AND A.EMP_NO = '100105'
+				AND A.SANCTN_DE IS NULL
+				AND (B.LAST_STTUS_CODE IS NULL OR B.LAST_STTUS_CODE != 'L2')
+				AND A.STEP != 1) A
+		WHERE A.DOC_SJ LIKE '%'||#{keyword}||'%'
+	</select>
+	
+	<!-- 3. 결재완료 -->
+	<!-- 3-1. 결재 완료 문서 목록 조회 -->
+	<select id="doneList" parameterType="hashMap" resultType="hashMap">
+	<![CDATA[
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY B.SANCTN_COMPT_DE DESC) RNUM,
+				A.ELCTRN_SANCTN_SN, A.STEP, A.EMP_NO,
+				FN_GETSANCTNMTH(A.SANCTN_STTUS_CODE),
+				A.RETURN_PRVONSH,
+				B.DOC_SJ, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, TO_CHAR(B.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+				C.EMP_NM, D.DEPT_NM
+			FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+			WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+				AND B.EMP_NO = C.EMP_NO
+				AND C.DEPT_CODE = D.DEPT_CODE
+				AND B.DELETE_YN = 'N'
+				AND A.SANCTN_DE IS NOT NULL
+				AND A.EMP_NO = #{empNo}
+				AND B.LAST_STTUS_CODE IS NOT NULL
+	            AND (A.SANCTN_STTUS_CODE <> 'S6' AND A.EMP_NO = #{empNo})) T
+	    WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+    ]]>
+	</select>
+
+	<!-- 3-2. 결재 완료 문서 상세 조회 -->
+	<select id="doneDetail" parameterType="elctrnSanctnVO" resultMap="sanctnMap">
+		SELECT B.ELCTRN_SANCTN_SN, B.EMP_NO, C.EMP_NM, D.DEPT_NM,
+		       B.DOC_SJ, B.DOC_CN, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE,
+		       TO_CHAR(B.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+		       FN_GETLASTSTTUSCODE(B.LAST_STTUS_CODE) AS LAST_STTUS_CODE,
+		       B.DSPLAY_AT, FN_GETSANCTNFORM(B.SANCTN_FORM_CODE) AS SANCTN_FORM_CODE,
+		       B.FILE_SN
+		FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+		    WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+		    AND B.EMP_NO = C.EMP_NO
+		    AND C.DEPT_CODE = D.DEPT_CODE
+		    AND B.ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND B.DELETE_YN = 'N'
+		    AND A.SANCTN_DE IS NOT NULL
+		    AND A.EMP_NO = #{empNo}
+		    AND B.LAST_STTUS_CODE IS NOT NULL
+	</select>
+	
+	<!-- 3-3. 결재 완료 문서의 경우 결재 문서 상태 수정 -->
+	<update id="doneSanctnSttusModify" parameterType="hashMap">
+		UPDATE ELCTRNSANCTN
+		SET SANCTN_COMPT_DE = SYSDATE,
+		    LAST_STTUS_CODE = #{lastSttusCode} 
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+	</update>
+
+	<!-- 3-4. 결재 완료 문서 목록 검색 -->
+	<select id="doneSearch" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.DRFT_DE DESC) RNUM,
+			A.ELCTRN_SANCTN_SN,
+			A.EMP_NO, A.DOC_SJ, A.DRFT_DE,
+			A.EMP_NM, A.DEPT_NM
+			FROM (SELECT ROW_NUMBER() OVER (ORDER BY B.DRFT_DE DESC)
+			RNUM, A.ELCTRN_SANCTN_SN, A.STEP, A.EMP_NO,
+			FN_GETSANCTNMTH(A.SANCTN_STTUS_CODE),
+			A.RETURN_PRVONSH,
+			B.DOC_SJ, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, B.SANCTN_COMPT_DE,
+			C.EMP_NM, D.DEPT_NM
+			FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+			WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+			AND B.EMP_NO = C.EMP_NO
+			AND C.DEPT_CODE = D.DEPT_CODE
+			AND B.DELETE_YN = 'N'
+			AND A.EMP_NO = #{empNo}
+			AND B.LAST_STTUS_CODE IS NOT NULL) A
+			WHERE A.DOC_SJ LIKE '%'||#{keyword}||'%') T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+	
+	<!-- 3-5. 결재 완료 문서 개수 조회 -->
+	<select id="doneListCount" parameterType="String" resultType="int">
+	<![CDATA[
+		SELECT COUNT(*)
+		FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+		WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+			AND B.EMP_NO = C.EMP_NO
+			AND C.DEPT_CODE = D.DEPT_CODE
+			AND B.DELETE_YN = 'N'
+			AND A.SANCTN_DE IS NOT NULL
+			AND A.EMP_NO = #{empNo}
+			AND B.LAST_STTUS_CODE IS NOT NULL
+            AND (A.SANCTN_STTUS_CODE <> 'S6' AND A.EMP_NO = #{empNo})
+    ]]>	
+	</select>
+	
+	<!-- 3-6. 결재 완료 문서 목록 검색 개수 조회 -->
+	<select id="doneSearchCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+		WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+		AND B.EMP_NO = C.EMP_NO
+		AND C.DEPT_CODE = D.DEPT_CODE
+		AND B.DELETE_YN = 'N'
+		AND A.EMP_NO = #{empNo}
+		AND B.LAST_STTUS_CODE IS NOT NULL) A
+		WHERE A.DOC_SJ LIKE '%'||#{keyword}||'%'
+	</select>
+
+	<!-- 4. 결재진행 -->
+	<!-- 4-1. 결재 진행 문서 목록 조회 -->
+	<select id="underList" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY B.DRFT_DE DESC) RNUM,
+				A.ELCTRN_SANCTN_SN, A.STEP, A.EMP_NO,
+				FN_GETSANCTNMTH(A.SANCTN_STTUS_CODE),
+				A.RETURN_PRVONSH,
+				B.DOC_SJ, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, TO_CHAR(B.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+				C.EMP_NM, D.DEPT_NM
+			FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+			WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+				AND B.EMP_NO = C.EMP_NO
+				AND C.DEPT_CODE = D.DEPT_CODE
+				AND B.DELETE_YN = 'N'
+				AND A.EMP_NO = #{empNo}
+				AND A.STEP != 1
+				AND A.SANCTN_DE IS NOT NULL
+	            AND B.SANCTN_COMPT_DE IS NULL) T
+        WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+
+	<!-- 4-2. 결재 진행 문서 상세 조회 -->
+	<select id="underDetail" parameterType="elctrnSanctnVO" resultMap="sanctnMap">
+		SELECT  B.ELCTRN_SANCTN_SN, B.EMP_NO, C.EMP_NM, D.DEPT_NM,
+		        B.DOC_SJ, B.DOC_CN, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE,
+		        TO_CHAR(B.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+		        FN_GETLASTSTTUSCODE(B.LAST_STTUS_CODE) AS LAST_STTUS_CODE,
+		        B.DSPLAY_AT, FN_GETSANCTNFORM(B.SANCTN_FORM_CODE) AS SANCTN_FORM_CODE,
+        		B.FILE_SN
+		FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+		WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+		    AND B.EMP_NO = C.EMP_NO
+		    AND C.DEPT_CODE = D.DEPT_CODE
+		    AND B.ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND B.DELETE_YN = 'N'
+		    AND A.EMP_NO = #{empNo}
+		    AND A.STEP != 1
+		    AND A.SANCTN_DE IS NOT NULL	
+	</select>
+
+	<!-- 4-3. 결재 진행 문서 개수 조회 -->
+	<select id="underListCount" parameterType="String" resultType="int">
+		SELECT COUNT(*)
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY B.DRFT_DE DESC) RNUM,
+					A.ELCTRN_SANCTN_SN, A.STEP, A.EMP_NO,
+					FN_GETSANCTNMTH(A.SANCTN_STTUS_CODE),
+					A.RETURN_PRVONSH,
+					B.DOC_SJ, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, TO_CHAR(B.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+					C.EMP_NM, D.DEPT_NM
+				FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+				WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+					AND B.EMP_NO = C.EMP_NO
+					AND C.DEPT_CODE = D.DEPT_CODE
+					AND B.DELETE_YN = 'N'
+					AND A.EMP_NO = #{empNo}
+					AND A.STEP != 1
+					AND A.SANCTN_DE IS NOT NULL
+                    AND B.SANCTN_COMPT_DE IS NULL)
+	</select>
+
+	<!-- 4-4. 결재 진행 문서 목록 검색 -->
+	<select id="underSearch" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.DRFT_DE DESC) RNUM,
+				A.ELCTRN_SANCTN_SN,
+				A.EMP_NO, A.DOC_SJ, A.DRFT_DE,
+				A.EMP_NM, A.DEPT_NM
+				FROM (SELECT ROW_NUMBER() OVER (ORDER BY B.DRFT_DE DESC)
+				RNUM, A.ELCTRN_SANCTN_SN, A.STEP, A.EMP_NO,
+				FN_GETSANCTNMTH(A.SANCTN_STTUS_CODE),
+				A.RETURN_PRVONSH,
+				B.DOC_SJ, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, B.SANCTN_COMPT_DE,
+				C.EMP_NM, D.DEPT_NM
+				FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+				WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+				AND B.EMP_NO = C.EMP_NO
+				AND C.DEPT_CODE = D.DEPT_CODE
+				AND B.DELETE_YN = 'N'
+				AND A.EMP_NO = #{empNo}
+				AND A.STEP != 1
+				AND A.SANCTN_DE IS NOT NULL) A
+				WHERE A.DOC_SJ LIKE '%'||#{keyword}||'%') T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+
+	<!-- 4-5. 결재 진행 문서 목록 검색 개수 조회 -->
+	<select id="underSearchCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+		WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+		AND B.EMP_NO = C.EMP_NO
+		AND C.DEPT_CODE = D.DEPT_CODE
+		AND B.DELETE_YN = 'N'
+		AND A.EMP_NO = #{empNo}
+		AND A.STEP != 1
+		AND A.SANCTN_DE IS NOT NULL) A
+		WHERE A.DOC_SJ LIKE '%'||#{keyword}||'%'
+	</select>
+	
+	<!-- ** 참조문서 -->
+	<!-- 1. 참조자 추가 -->
+	<insert id="ccAdd" parameterType="hashMap">
+		INSERT INTO CC (ELCTRN_SANCTN_SN, EMP_NO, CNFIRM_AT) 
+		VALUES (#{elctrnSanctnSn}, #{empNo}, 'N')	
+	</insert>
+	
+	<!-- 2. 참조자 조회 -->
+	<select id="ccEmpInfoBySn" parameterType="int" resultType="hashMap">
+		SELECT A.EMP_NO, B.EMP_NM, FN_GETCLSF(B.CLSF_CODE) CLSF_CODE, C.DEPT_NM 
+		FROM CC A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		    AND B.DEPT_CODE = C.DEPT_CODE
+		    AND A.ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		ORDER BY B.EMP_NM
+	</select>
+	
+	<!-- 3. 참조 문서 목록 조회 -->
+	<select id="ccList" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.CC_DE DESC) RNUM, A.ELCTRN_SANCTN_SN, B.DOC_SJ, 
+				       B.EMP_NO, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd hh24:mi') DRFT_DE, TO_CHAR(B.SANCTN_COMPT_DE, 'yyyy-MM-dd hh24:mi') SANCTN_COMPT_DE, C.EMP_NM, D.DEPT_NM
+				FROM CC A, ELCTRNSANCTN B, EMP C, DEPT D
+				WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+				    AND B.EMP_NO = C.EMP_NO
+				    AND C.DEPT_CODE = D.DEPT_CODE
+				    AND A.EMP_NO = #{empNo}) T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+	
+	<!-- 4. 참조 문서 목록 검색 -->
+	<select id="ccSearch" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.CC_DE DESC) RNUM, A.ELCTRN_SANCTN_SN, B.DOC_SJ, 
+				       B.EMP_NO, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd hh24:mi') DRFT_DE, C.EMP_NM, D.DEPT_NM
+				FROM CC A, ELCTRNSANCTN B, EMP C, DEPT D
+				WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+				    AND B.EMP_NO = C.EMP_NO
+				    AND C.DEPT_CODE = D.DEPT_CODE
+				    AND A.EMP_NO = #{empNo}
+					AND B.DOC_SJ LIKE '%'||#{keyword}||'%') T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>	
+	
+	<!-- 5. 참조 문서 상세 -->
+	<select id="ccDetail" parameterType="elctrnSanctnVO" resultMap="sanctnMap">
+		SELECT A.ELCTRN_SANCTN_SN, A.EMP_NO, B.EMP_NM, C.DEPT_NM, A.DOC_SJ, A.DOC_CN,
+		       TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, 
+		       TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+		       FN_GETLASTSTTUSCODE(A.LAST_STTUS_CODE) AS LAST_STTUS_CODE, A.DSPLAY_AT,
+		       FN_GETSANCTNFORM(A.SANCTN_FORM_CODE) AS SANCTN_FORM_CODE, A.FILE_SN
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		    AND B.DEPT_CODE = C.DEPT_CODE
+		    AND A.ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND A.DELETE_YN = 'N'
+		    AND A.RTRVL_AT = 'N'
+		    AND A.TMPR_AT = 'N'
+            AND #{empNo} IN (SELECT EMP_NO FROM CC WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn})
+	</select>
+	
+	<!-- 6. 참조 문서 확인 여부 수정 -->
+	<update id="ccCnfirmAtModify" parameterType="hashMap">
+		UPDATE CC SET CNFIRM_AT = 'Y' WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn} AND EMP_NO = #{empNo}
+	</update>
+	
+	<!-- 7. 참조 문서 확인 여부 -->
+	<select id="ccCnfirmAt" parameterType="hashMap" resultType="String">
+		SELECT CNFIRM_AT
+		FROM CC
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+			AND EMP_NO = #{empNo}
+	</select>
+	
+	<!-- 8. 참조 문서 개수 조회 -->
+	<select id="ccListCount" parameterType="String" resultType="int">
+		SELECT COUNT(*)
+		FROM CC A, ELCTRNSANCTN B, EMP C, DEPT D
+		WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+		    AND B.EMP_NO = C.EMP_NO
+		    AND C.DEPT_CODE = D.DEPT_CODE
+		    AND A.EMP_NO = #{empNo}	
+	</select>
+		
+	<!-- 9. 참조 문서 목록 검색 개수 조회 -->
+	<select id="ccSearchCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM CC A, ELCTRNSANCTN B, EMP C, DEPT D
+		WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+		    AND B.EMP_NO = C.EMP_NO
+		    AND C.DEPT_CODE = D.DEPT_CODE
+		    AND A.EMP_NO = #{empNo}
+			AND B.DOC_SJ LIKE '%'||#{keyword}||'%'
+	</select>	
+	
+	<!-- ** 반려문서 -->
+	<!-- 1. 반려 문서 목록 검색 -->
+	<select id="returnSearch" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.SANCTN_COMPT_DE DESC) RNUM,
+				A.ELCTRN_SANCTN_SN,
+				A.EMP_NO, A.DOC_SJ, A.LAST_STTUS_CODE, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi')
+				DRFT_DE,
+				TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE, B.EMP_NM, C.DEPT_NM
+				FROM
+				ELCTRNSANCTN A, EMP B, DEPT C
+				WHERE A.EMP_NO = B.EMP_NO
+				AND B.DEPT_CODE = C.DEPT_CODE
+				AND A.DELETE_YN = 'N'
+				AND A.LAST_STTUS_CODE = 'L2'
+				AND A.EMP_NO = #{empNo}
+				AND A.DOC_SJ LIKE '%'||#{keyword}||'%') T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+	
+	<!-- 2. 반려 문서 목록 조회 -->
+	<select id="returnList" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.SANCTN_COMPT_DE DESC)
+					RNUM, A.ELCTRN_SANCTN_SN,
+					A.EMP_NO, A.DOC_SJ, A.LAST_STTUS_CODE, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi')
+					DRFT_DE,
+					TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE, B.EMP_NM, C.DEPT_NM
+				FROM
+					ELCTRNSANCTN A, EMP B, DEPT C
+				WHERE A.EMP_NO = B.EMP_NO
+					AND B.DEPT_CODE = C.DEPT_CODE
+					AND A.DELETE_YN = 'N'
+					AND A.RTRVL_AT = 'N'
+					AND A.TMPR_AT = 'N'
+					AND A.LAST_STTUS_CODE = 'L2'
+					AND A.EMP_NO = #{empNo}) T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+	
+	<!-- 3. 반려 문서 상세 조회 -->
+	<select id="returnDetail" parameterType="elctrnSanctnVO" resultMap="sanctnMap">
+		SELECT A.ELCTRN_SANCTN_SN, A.EMP_NO, B.EMP_NM, C.DEPT_NM, A.DOC_SJ, A.DOC_CN,
+		       TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, 
+		       TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+		       FN_GETLASTSTTUSCODE(A.LAST_STTUS_CODE) AS LAST_STTUS_CODE, A.DSPLAY_AT,
+		       FN_GETSANCTNFORM(A.SANCTN_FORM_CODE) AS SANCTN_FORM_CODE, A.FILE_SN
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		    AND B.DEPT_CODE = C.DEPT_CODE
+		    AND A.ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND A.DELETE_YN = 'N'
+		    AND A.RTRVL_AT = 'N'
+		    AND A.TMPR_AT = 'N'
+		    AND A.LAST_STTUS_CODE = 'L2'
+		    AND A.EMP_NO = #{empNo}
+	</select>
+		
+	<!-- 4. 반려 문서 삭제 -->
+	<update id="returnDelete" parameterType="int">
+		UPDATE ELCTRNSANCTN
+		SET DELETE_YN = 'Y'
+		WHERE LAST_STTUS_CODE = 'L2'
+		    AND ELCTRN_SANCTN_SN =	#{elctrnSanctnSn}
+	</update>
+
+	<!-- 5. 반려 문서 개수 조회 -->
+	<select id="returnListCount" parameterType="String" resultType="int">
+		SELECT COUNT(*)
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY
+		A.SANCTN_COMPT_DE DESC) RNUM, A.ELCTRN_SANCTN_SN,
+		A.EMP_NO, A.DOC_SJ, A.LAST_STTUS_CODE, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi')
+		DRFT_DE,
+		TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE, B.EMP_NM, C.DEPT_NM
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		AND B.DEPT_CODE = C.DEPT_CODE
+		AND A.DELETE_YN = 'N'
+		AND A.RTRVL_AT = 'N'
+		AND A.TMPR_AT = 'N'
+		AND A.LAST_STTUS_CODE = 'L2'
+		AND A.EMP_NO = #{empNo})
+	</select>
+
+	<!-- 6. 반려 문서로 수정 -->
+	<update id="returnAtModify" parameterType="hashMap">
+		UPDATE ELCTRNSANCTN
+		SET LAST_STTUS_CODE = 'L2',
+		    SANCTN_COMPT_DE = SYSDATE
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND DSPLAY_AT = 'N'
+		    AND DELETE_YN = 'N'
+		    AND RTRVL_AT = 'N'
+		    AND TMPR_AT = 'N'
+		    AND #{empNo} = (SELECT T.EMP_NO FROM
+		                        (
+		                            SELECT ROW_NUMBER() OVER (ORDER BY STEP DESC) RNUM, EMP_NO, STEP
+		                            FROM SANCTNLINE
+		                            WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		                                AND SANCTN_DE IS NOT NULL
+		                        ) T, EMP B, DEPT C
+		                        WHERE T.EMP_NO = B.EMP_NO
+		                            AND B.DEPT_CODE = C.DEPT_CODE
+		                            AND T.RNUM=1)
+	</update>
+
+	<!-- 7. 반려 문서로 수정에 따른 결재라인 수정 -->
+	<update id="returnSanctnLineModify" parameterType="hashMap">
+		UPDATE SANCTNLINE
+		SET SANCTN_STTUS_CODE = 'S3',
+			SANCTN_DE = SYSDATE,
+			RETURN_PRVONSH = #{returnPrvonsh}
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		AND STEP = (SELECT STEP FROM SANCTNLINE
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		AND EMP_NO = #{empNo})
+		AND #{empNo} = (SELECT T.EMP_NO FROM
+		(
+		SELECT ROW_NUMBER() OVER (ORDER BY STEP ASC) RNUM, EMP_NO, STEP
+		FROM SANCTNLINE
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		AND SANCTN_DE IS NULL
+		) T, EMP B, DEPT C
+		WHERE T.EMP_NO = B.EMP_NO
+		AND B.DEPT_CODE = C.DEPT_CODE
+		AND T.RNUM=1)
+	</update>
+ 	
+ 	<!-- 8. 반려 문서 여부 확인 -->
+ 	<select id="returnAt" parameterType="int" resultType="hashMap">
+		SELECT SANCTN_STTUS_CODE, RETURN_PRVONSH, SANCTN_DE
+		FROM SANCTNLINE
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND RETURN_PRVONSH IS NOT NULL
+ 	</select>
+
+	<!-- 9. 반려 문서의 경우 이후 결재자들의 결재상태코드 수정 -->
+	<update id="returnSanctnSttusModify" parameterType="hashMap">
+		UPDATE SANCTNLINE
+		SET SANCTN_STTUS_CODE = 'S5'
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND STEP = (SELECT STEP
+		                FROM SANCTNLINE
+		                WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		                    AND SANCTN_STTUS_CODE = 'S3') + #{cnt}
+	</update>
+	
+	<!-- 10. 반려 문서 목록 검색 개수 조회 -->
+	<select id="returnSearchCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND A.DELETE_YN = 'N'
+			AND A.LAST_STTUS_CODE = 'L2'
+			AND A.EMP_NO = #{empNo}
+			AND A.DOC_SJ LIKE '%'||#{keyword}||'%'
+	</select>
+	
+	<!-- ** 회수문서 -->	
+	<!-- 1. 결재 요청 문서 회수 (결재라인 삭제) -->
+	<delete id="rtrvlSanctnLineDelete" parameterType="hashMap">
+		DELETE FROM SANCTNLINE
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND #{empNo} = (SELECT EMP_NO FROM SANCTNLINE WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn} AND STEP = 1)
+		                    AND (SELECT T.SANCTN_DE FROM
+		                            (SELECT ROW_NUMBER() OVER (ORDER BY STEP ASC) RNUM, EMP_NO, STEP, SANCTN_DE
+		                             FROM SANCTNLINE
+		                             WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		                                 AND SANCTN_DE IS NULL) T
+		                         WHERE T.RNUM=1) IS NULL
+	</delete>
+	
+	<!-- 1-1. 결재 요청 문서 회수 (참조자 삭제) -->
+	<delete id="rtrvlCcDelete" parameterType="hashMap">
+		DELETE FROM CC
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND #{empNo} = (SELECT EMP_NO FROM SANCTNLINE WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn} AND STEP = 1)
+		                    AND (SELECT T.SANCTN_DE FROM
+		                            (SELECT ROW_NUMBER() OVER (ORDER BY STEP ASC) RNUM, EMP_NO, STEP, SANCTN_DE
+		                             FROM SANCTNLINE
+		                             WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		                                 AND SANCTN_DE IS NULL) T
+		                         WHERE T.RNUM=1) IS NULL			
+	</delete>
+
+	<!-- 2. 결재 문서 회수 여부 수정 -->
+	<update id="rtrvlAtModify" parameterType="int">
+		UPDATE ELCTRNSANCTN
+		SET RTRVL_AT = 'Y'
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+	</update>
+
+	<!-- 3. 회수 문서 목록 조회 -->
+	<select id="rtrvlList" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.DRFT_DE DESC) RNUM,
+				A.ELCTRN_SANCTN_SN, A.EMP_NO,
+				TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+				A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, B.EMP_NM, C.DEPT_NM
+				FROM ELCTRNSANCTN A, EMP B, DEPT C
+				WHERE A.EMP_NO = B.EMP_NO
+				AND B.DEPT_CODE = C.DEPT_CODE
+				AND A.DELETE_YN = 'N'
+				AND A.TMPR_AT = 'N'
+				AND A.EMP_NO = #{empNo}
+				AND A.RTRVL_AT = 'Y') T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+
+	<!-- 4. 회수 문서 상세 정보 조회 -->
+	<select id="rtrvlDetail" parameterType="elctrnSanctnVO" resultMap="sanctnMap">
+		SELECT A.ELCTRN_SANCTN_SN, A.EMP_NO, A.DOC_SJ, A.DOC_CN,
+		TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, A.FILE_SN, B.EMP_NM,
+		C.DEPT_NM
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		AND B.DEPT_CODE = C.DEPT_CODE
+		AND A.ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		AND A.DELETE_YN = 'N'
+		AND A.TMPR_AT = 'N'
+		AND A.RTRVL_AT = 'Y'
+		AND A.EMP_NO = #{empNo}
+	</select>
+
+	<!-- 5. 회수 문서 삭제 -->
+	<update id="rtrvlDelete" parameterType="int">
+		UPDATE ELCTRNSANCTN
+		SET DELETE_YN = 'Y'
+		WHERE RTRVL_AT = 'Y'
+		    AND ELCTRN_SANCTN_SN =	#{elctrnSanctnSn}
+	</update>
+
+	<!-- 6. 회수 문서 목록 검색 -->
+	<select id="rtrvlSearch" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.DRFT_DE DESC) RNUM,
+			A.ELCTRN_SANCTN_SN, A.EMP_NO,
+			TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+			A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, B.EMP_NM, C.DEPT_NM
+			FROM ELCTRNSANCTN A, EMP B, DEPT C
+			WHERE A.EMP_NO = B.EMP_NO
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND A.DELETE_YN = 'N'
+			AND A.TMPR_AT = 'N'
+			AND A.EMP_NO = #{empNo}
+			AND A.RTRVL_AT = 'Y'
+			AND A.DOC_SJ LIKE '%'||#{keyword}||'%') T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10
+	</select>
+	
+	<!-- 7. 첫 번째 결재자의 결재여부 확인 (기결재 문서라면 회수 불가) -->
+	<select id="rtrvlSanctnConfirmAt" parameterType="int" resultType="String">
+		SELECT SANCTN_DE
+		FROM SANCTNLINE
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND STEP = 2		
+	</select>
+	
+	<!-- 8. 회수 문서 개수 조회 -->
+	<select id="rtrvlListCount" parameterType="String" resultType="int">
+		SELECT COUNT(*)
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		AND B.DEPT_CODE = C.DEPT_CODE
+		AND A.DELETE_YN = 'N'
+		AND A.TMPR_AT = 'N'
+		AND A.EMP_NO = #{empNo}
+		AND A.RTRVL_AT = 'Y'	
+	</select>
+	
+	<!-- 9. 회수 문서 목록 검색 개수 조회 -->
+	<select id="rtrvlSearchCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND A.DELETE_YN = 'N'
+			AND A.TMPR_AT = 'N'
+			AND A.EMP_NO = #{empNo}
+			AND A.RTRVL_AT = 'Y'
+			AND A.DOC_SJ LIKE '%'||#{keyword}||'%'
+	</select>
+		
+	<!-- ** 공람문서 -->
+	<!-- 1. 공람 문서 목록 조회 -->
+	<select id="displayList" parameterType="hashMap" resultType="hashMap">
+		<![CDATA[
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER
+				    (ORDER BY A.SANCTN_COMPT_DE DESC) RNUM, A.ELCTRN_SANCTN_SN,
+				    A.EMP_NO, A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE,
+				    TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+				    FN_GETLASTSTTUSCODE(A.LAST_STTUS_CODE) AS LAST_STTUS_CODE, B.EMP_NM,
+				    C.DEPT_NM, A.DSPLAY_EMP_NO, X.EMP_NM DSPLAY_EMP_NM
+				FROM ELCTRNSANCTN A, EMP B, DEPT C, EMP X
+				WHERE A.EMP_NO = B.EMP_NO
+				    AND B.DEPT_CODE = C.DEPT_CODE
+				    AND A.DSPLAY_EMP_NO = X.EMP_NO
+				    AND A.DSPLAY_EMP_NO <> #{empNo}
+				    AND A.EMP_NO <> #{empNo}
+				    AND A.DELETE_YN = 'N'
+				    AND A.RTRVL_AT = 'N'
+				    AND A.TMPR_AT = 'N'
+				    AND A.DSPLAY_AT = 'Y') T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10	    
+		]]>
+	</select>
+	
+	<!-- 공람 문서 개수 조회 -->
+	<select id="displayListCount" parameterType="String" resultType="int">
+		<![CDATA[
+		SELECT COUNT(*)
+		FROM ELCTRNSANCTN A, EMP B, DEPT C, EMP X
+		WHERE A.EMP_NO = B.EMP_NO
+		    AND B.DEPT_CODE = C.DEPT_CODE
+		    AND A.DSPLAY_EMP_NO = X.EMP_NO
+		    AND A.DSPLAY_EMP_NO <> #{empNo}
+		    AND A.EMP_NO <> #{empNo}
+		    AND A.DELETE_YN = 'N'
+		    AND A.RTRVL_AT = 'N'
+		    AND A.TMPR_AT = 'N'
+		    AND A.DSPLAY_AT = 'Y'
+		]]>	
+	</select>
+	
+	<!-- 2. 공람 문서 상세 조회 -->
+	<select id="displayDetail" parameterType="elctrnSanctnVO" resultMap="sanctnMap">
+		SELECT A.ELCTRN_SANCTN_SN, A.EMP_NO, B.EMP_NM, C.DEPT_NM, A.DOC_SJ, A.DOC_CN,
+		       TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, 
+		       TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+		       FN_GETLASTSTTUSCODE(A.LAST_STTUS_CODE) AS LAST_STTUS_CODE, A.DSPLAY_AT,
+		       FN_GETSANCTNFORM(A.SANCTN_FORM_CODE) AS SANCTN_FORM_CODE, A.FILE_SN
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		    AND B.DEPT_CODE = C.DEPT_CODE
+		    AND A.DELETE_YN = 'N'
+		    AND A.ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND A.RTRVL_AT = 'N'
+		    AND A.TMPR_AT = 'N'
+		    AND A.DSPLAY_AT = 'Y'	
+	</select>
+
+	<!-- 3. 공람 문서 여부 수정 -->
+	<update id="displayAtModify" parameterType="hashMap">
+		UPDATE ELCTRNSANCTN
+		SET DSPLAY_AT = 'Y',
+			DSPLAY_EMP_NO = #{empNo}
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		AND LAST_STTUS_CODE = 'L1'
+		AND #{empNo} IN (SELECT EMP_NO
+		FROM SANCTNLINE
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn})
+	</update>
+
+	<!-- 4. 공람 문서 목록 검색 -->
+	<select id="displaySearch" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.SANCTN_COMPT_DE DESC) RNUM,
+				A.ELCTRN_SANCTN_SN,
+				A.EMP_NO, A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE,
+				TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+				FN_GETLASTSTTUSCODE(A.LAST_STTUS_CODE) AS LAST_STTUS_CODE, B.EMP_NM,
+				C.DEPT_NM
+			FROM ELCTRNSANCTN A, EMP B, DEPT C
+			WHERE A.EMP_NO = B.EMP_NO
+				AND B.DEPT_CODE = C.DEPT_CODE
+				AND A.DELETE_YN = 'N'
+				AND A.RTRVL_AT = 'N'
+				AND A.TMPR_AT = 'N'
+				AND A.DSPLAY_AT = 'Y'
+				AND A.DOC_SJ LIKE '%'||#{keyword}||'%') T
+		WHERE T.RNUM BETWEEN #{currentPage} * 10 - 9 AND #{currentPage} * 10		
+	</select>
+	
+	<!-- 5. 공람 여부 확인 -->
+	<select id="displayAt" parameterType="int" resultType="String">
+		SELECT DSPLAY_AT
+		FROM ELCTRNSANCTN
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+	</select>
+		
+	<!-- 6. 공람 문서 목록 검색 개수 조회 -->
+	<select id="displaySearchCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND A.DELETE_YN = 'N'
+			AND A.RTRVL_AT = 'N'
+			AND A.TMPR_AT = 'N'
+			AND A.DSPLAY_AT = 'Y'
+			AND A.DOC_SJ LIKE '%'||#{keyword}||'%'
+	</select>
+			
+	<!-- ** 파일 -->
+	<!-- 1. 문서번호로 파일번호 찾기 -->
+	<select id="fileSnBySn" parameterType="int" resultType="int">
+		SELECT FILE_SN
+		FROM ELCTRNSANCTN
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+	</select>
+	
+	<!-- 2. 결재문서에 파일번호 추가 -->
+	<update id="addFileSnToSanctn" parameterType="hashMap">
+		UPDATE ELCTRNSANCTN
+		SET FILE_SN = #{fileSn}
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}		
+	</update>
+	
+	<!-- 3. 다음에 추가될 파일의 FILE_SN 조회 -->
+	<select id="nextFileSn" resultType="int">
+		SELECT NVL(MAX(FILE_SN),0)+1 FROM ATCHMNFL
+	</select>
+
+	<!-- 4. 파일 추가 -->
+	<insert id="fileAdd" parameterType="hashMap">
+		INSERT INTO ATCHMNFL (
+		FILE_SN, FILE_ORDR, FILE_NM, FLPTH,
+		REAL_FILE_NM, REAL_FILE_MG
+		) VALUES (
+		#{fileSn},
+		(SELECT NVL(MAX(FILE_ORDR),0)+1 FROM ATCHMNFL WHERE FILE_SN = #{fileSn}),
+		#{fileNm}, #{flpth}, #{realFileNm}, #{realFileMG}
+		)
+	</insert>
+
+	<!-- 5. 파일 목록 조회 (파일번호로) -->
+	<select id="fileList" parameterType="int" resultType="hashMap">
+		SELECT
+		FILE_SN, FILE_ORDR, FILE_NM, FLPTH, REAL_FILE_NM, REAL_FILE_MG,
+		FILE_TY
+		FROM ATCHMNFL
+		WHERE FILE_SN = #{fileSn}
+		AND DELETE_YN = 'N'
+	</select>
+	
+	<!-- 5-1. 파일 목록 조회 (파일명으로) -->
+	<select id="fileListName" parameterType="String" resultType="hashMap">
+		SELECT FILE_SN, FILE_ORDR, FILE_NM, FLPTH, REAL_FILE_NM, REAL_FILE_MG
+		FROM ATCHMNFL
+		WHERE FILE_NM LIKE #{keyword}||'%'
+	</select>
+	
+	<!-- ** 기안 / 승인 관련 -->
+	<!-- 결재 문서 상신(등록, 추가) -->
+	<insert id="sanctnAdd" parameterType="hashMap">
+		<selectKey order="BEFORE" resultType="int" keyProperty="elctrnSanctnSn">
+			SELECT NVL(MAX(ELCTRN_SANCTN_SN),0)+1 FROM ELCTRNSANCTN
+		</selectKey>
+		INSERT INTO ELCTRNSANCTN (
+			ELCTRN_SANCTN_SN, EMP_NO,
+			DOC_SJ, DOC_CN, DRFT_DE, FILE_SN, SANCTN_FORM_CODE
+		) VALUES (
+			#{elctrnSanctnSn},
+			#{empNo},
+			#{docSj},
+			#{docCn},
+			SYSDATE,
+			#{fileSn},
+			#{sanctnFormCode}
+		)
+	</insert>
+	
+	<!-- 결재자의 결재 단계 조회 -->
+	<select id="findSanctnStep" parameterType="hashMap" resultType="int">
+		SELECT STEP
+		FROM SANCTNLINE
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+			AND EMP_NO = #{empNo}
+	</select>
+
+	<!-- 기안자 결재라인 추가 -->
+	<insert id="drftSanctnLineAdd" parameterType="String">
+		INSERT INTO SANCTNLINE (
+			ELCTRN_SANCTN_SN, STEP, EMP_NO, SANCTN_DE, SANCTN_STTUS_CODE
+		) VALUES (
+			(SELECT NVL(MAX(ELCTRN_SANCTN_SN),0) FROM ELCTRNSANCTN),
+			(SELECT NVL(MAX(STEP),0)+1 FROM SANCTNLINE WHERE ELCTRN_SANCTN_SN = (SELECT NVL(MAX(ELCTRN_SANCTN_SN),0) FROM ELCTRNSANCTN)),
+			#{empNo},
+			SYSDATE,
+			'S6'
+		)	
+	</insert>
+
+	<!-- 결재라인 추가 -->
+	<insert id="sanctnLineAdd" parameterType="hashMap">
+		INSERT INTO SANCTNLINE (
+			ELCTRN_SANCTN_SN, STEP, EMP_NO, SANCTN_STTUS_CODE
+		) VALUES (
+			(SELECT NVL(MAX(ELCTRN_SANCTN_SN),0) FROM ELCTRNSANCTN),
+			(SELECT NVL(MAX(STEP),0)+1 FROM SANCTNLINE WHERE ELCTRN_SANCTN_SN = (SELECT NVL(MAX(ELCTRN_SANCTN_SN),0) FROM ELCTRNSANCTN)),
+			#{empNo}, #{sanctnSttusCode}
+		)
+	</insert>
+
+	<!-- 결재자 결재(승인) -->
+	<update id="sanctnConfirm" parameterType="hashMap">
+		UPDATE SANCTNLINE
+		SET SANCTN_DE = SYSDATE,
+		    SANCTN_STTUS_CODE = 'S2'
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND EMP_NO = #{empNo}
+	</update>
+	
+	<!-- 다음 결재자의 결재상태코드를 진행중으로 수정 -->
+	<update id="underSanctnSttusModify" parameterType="int">
+		<![CDATA[
+		UPDATE SANCTNLINE
+		SET SANCTN_STTUS_CODE = 'S1'
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND STEP = (SELECT STEP
+		                        FROM (
+		                                SELECT ROW_NUMBER() OVER (ORDER BY STEP ASC) RNUM, ELCTRN_SANCTN_SN, STEP, SANCTN_STTUS_CODE
+		                                FROM SANCTNLINE
+		                                WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		                                    AND SANCTN_STTUS_CODE <> 'S2'
+                                            AND STEP <> 1
+		                                )
+		                        WHERE RNUM = 1
+		                        )
+		]]>
+	</update>
+
+	<!-- 문서의 마지막 결재자의 결재상태코드 조회 -->
+	<select id="lastSanctnSttus" parameterType="int" resultType="String">
+		SELECT SANCTN_STTUS_CODE
+		FROM SANCTNLINE
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		    AND ROWNUM = 1
+		ORDER BY STEP DESC	
+	</select>
+
+	<!-- 결재라인 상세 정보 조회 -->
+	<select id="sanctnLineList" parameterType="int" resultType="hashMap">
+		SELECT A.ELCTRN_SANCTN_SN, A.STEP, A.EMP_NO, B.EMP_NM, C.DEPT_NM, FN_GETCLSF(B.CLSF_CODE) CLSF_NM,
+		       FN_GETSANCTNMTH(A.SANCTN_MTH_CODE) SANCTN_MTH_CODE,
+		       TO_CHAR(A.SANCTN_DE, 'yyyy-MM-dd hh24:mi') SANCTN_DE,
+		       FN_GETSANCTNSTTUS(A.SANCTN_STTUS_CODE) SANCTN_STTUS_CODE,
+		       A.RETURN_PRVONSH
+<!-- 		       , A.CNFIRM_AT -->
+		FROM SANCTNLINE A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		    AND B.DEPT_CODE = C.DEPT_CODE
+		    AND ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+		ORDER BY STEP
+	</select>
+
+	<!-- 기결재자 결재라인 상세 정보 조회 -->
+	<select id="sanctnLineList2" parameterType="int" resultType="hashMap">
+		SELECT A.ELCTRN_SANCTN_SN, A.STEP, A.EMP_NO, B.EMP_NM, C.DEPT_NM, FN_GETCLSF(B.CLSF_CODE) CLSF_NM,
+		       FN_GETSANCTNMTH(A.SANCTN_MTH_CODE) SANCTN_MTH_CODE,
+		       TO_CHAR(A.SANCTN_DE, 'yyyy-MM-dd hh24:mi') SANCTN_DE,
+		       FN_GETSANCTNSTTUS(A.SANCTN_STTUS_CODE) SANCTN_STTUS_CODE,
+		       A.RETURN_PRVONSH
+<!-- 		       , A.CNFIRM_AT -->
+		FROM SANCTNLINE A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		    AND B.DEPT_CODE = C.DEPT_CODE
+		    AND ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+            AND SANCTN_DE IS NOT NULL
+            AND RETURN_PRVONSH IS NULL
+		ORDER BY STEP
+	</select>
+	
+	<!-- 문서의 결재상태 찾기 -->
+	<select id="lastSttusCodeBySn" parameterType="int" resultType="hashMap">
+		SELECT LAST_STTUS_CODE, TMPR_AT
+		FROM ELCTRNSANCTN
+		WHERE ELCTRN_SANCTN_SN = #{elctrnSanctnSn}
+	</select>
+
+	<!-- 문서번호로 기안자 찾기 -->
+	<select id="drftEmpNameBySn" parameterType="int" resultType="hashMap">
+		SELECT A.EMP_NO, B.EMP_NM, C.DEPT_NM
+		FROM ELCTRNSANCTN A, EMP B, DEPT C
+		WHERE A.EMP_NO = B.EMP_NO
+		    AND B.DEPT_CODE = C.DEPT_CODE
+		    AND ELCTRN_SANCTN_SN = #{elctrnSanctnSn}	
+	</select>
+	
+	<!-- emp_no로 emp_nm, dept_nm 찾기 -->
+	<select id="empInfoByEmpNo" parameterType="String" resultType="hashMap">
+		SELECT A.EMP_NO, A.EMP_NM, B.DEPT_NM, FN_GETCLSF(A.CLSF_CODE) CLSF_NM
+		FROM EMP A, DEPT B
+		WHERE A.DEPT_CODE = B.DEPT_CODE
+		AND A.EMP_NO = #{empNo}
+	</select>
+	
+	<!-- ** 기타 -->
+	<!-- tiles - aisde에 전자결재 개수 표시하기 위함 -->
+	<select id="sanctnCount" parameterType="String" resultType="hashMap">
+		SELECT MAX(TBL.waitCount) waitCount
+			, MAX(TBL.underCount) underCount
+			, MAX(TBL.returnCount) returnCount
+			, MAX(TBL.requestCount) requestCount
+            , MAX(TBL.ccCount) ccCount
+		FROM
+		(
+			SELECT COUNT(*) waitCount, null underCount, null returnCount, null
+			requestCount, null ccCount
+			FROM (WITH T AS(
+			SELECT A.ELCTRN_SANCTN_SN, A.STEP, A.STEP-1 AS BFSTEP, A.EMP_NO,
+			A.SANCTN_MTH_CODE, TO_CHAR(A.SANCTN_DE, 'yyyy-MM-dd HH24:mi') AS
+			SANCTN_DE,
+			A.SANCTN_STTUS_CODE, A.RETURN_PRVONSH,
+			(SELECT B.SANCTN_DE FROM SANCTNLINE B
+			WHERE B.ELCTRN_SANCTN_SN = A.ELCTRN_SANCTN_SN
+			AND B.STEP = A.STEP-1) BFSTEP_SANCTN_DE
+			FROM SANCTNLINE A
+			WHERE A.STEP != 1
+			AND A.EMP_NO = #{empNo}
+			)
+			SELECT ROW_NUMBER() OVER (ORDER BY T.BFSTEP_SANCTN_DE DESC) RNUM, T.*,
+			B.EMP_NM, C.DEPT_NM,
+			FN_GETSANCTNMTH(T.SANCTN_STTUS_CODE), A.DOC_SJ, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE,
+			TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE
+			FROM T, ELCTRNSANCTN A, EMP B, DEPT C
+			WHERE T.ELCTRN_SANCTN_SN = A.ELCTRN_SANCTN_SN
+			AND T.EMP_NO = B.EMP_NO
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND A.DELETE_YN = 'N'
+			AND A.LAST_STTUS_CODE IS NULL
+			AND T.BFSTEP_SANCTN_DE IS NOT NULL
+			AND T.SANCTN_DE IS NULL)
+			union all
+			SELECT null waitCount, COUNT(*) underCount, null returnCount, null requestCount
+            , null ccCount
+			FROM (SELECT ROW_NUMBER() OVER (ORDER BY B.DRFT_DE DESC) RNUM,
+			A.ELCTRN_SANCTN_SN, A.STEP, A.EMP_NO,
+			FN_GETSANCTNMTH(A.SANCTN_STTUS_CODE),
+			A.RETURN_PRVONSH,
+			B.DOC_SJ, TO_CHAR(B.DRFT_DE, 'yyyy-MM-dd HH24:mi') DRFT_DE, TO_CHAR(B.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE,
+			C.EMP_NM, D.DEPT_NM
+			FROM SANCTNLINE A, ELCTRNSANCTN B, EMP C, DEPT D
+			WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+			AND B.EMP_NO = C.EMP_NO
+			AND C.DEPT_CODE = D.DEPT_CODE
+			AND B.DELETE_YN = 'N'
+			AND A.EMP_NO = #{empNo}
+			AND A.STEP != 1
+			AND A.SANCTN_DE IS NOT NULL
+            AND B.SANCTN_COMPT_DE IS NULL)
+			union all
+			SELECT null waitCount, null underCount, COUNT(*) returnCount, null
+			requestCount, null ccCount
+			FROM (SELECT ROW_NUMBER() OVER (ORDER BY A.SANCTN_COMPT_DE DESC) RNUM,
+			A.ELCTRN_SANCTN_SN,
+			A.EMP_NO, A.DOC_SJ, A.LAST_STTUS_CODE, TO_CHAR(A.DRFT_DE, 'yyyy-MM-dd HH24:mi')
+			DRFT_DE,
+			TO_CHAR(A.SANCTN_COMPT_DE, 'yyyy-MM-dd HH24:mi') SANCTN_COMPT_DE, B.EMP_NM, C.DEPT_NM
+			FROM ELCTRNSANCTN A, EMP B, DEPT C
+			WHERE A.EMP_NO = B.EMP_NO
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND A.DELETE_YN = 'N'
+			AND A.RTRVL_AT = 'N'
+			AND A.TMPR_AT = 'N'
+			AND A.LAST_STTUS_CODE = 'L2'
+			AND A.EMP_NO = #{empNo})
+			union all
+			SELECT null waitCount, null underCount, null returnCount, COUNT(*)
+			requestCount, null ccCount
+			FROM ELCTRNSANCTN A
+			WHERE LAST_STTUS_CODE IS NULL
+			AND A.DELETE_YN = 'N'
+			AND A.RTRVL_AT = 'N'
+			AND A.TMPR_AT = 'N'
+			AND A.EMP_NO = #{empNo}
+            union all
+            SELECT null waitCount, null underCount, null returnCount, null
+			requestCount,  COUNT(*) ccCount
+            FROM CC A, ELCTRNSANCTN B, EMP C, DEPT D
+            WHERE A.ELCTRN_SANCTN_SN = B.ELCTRN_SANCTN_SN
+                AND B.EMP_NO = C.EMP_NO
+                AND C.DEPT_CODE = D.DEPT_CODE
+                AND A.EMP_NO = #{empNo}
+                AND A.CNFIRM_AT = 'N'
+            ) TBL
+	</select>
+	
+	
+	
+</mapper>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.ddit.mtgr.mapper.MtgrMapper">
+	<!-- 
+* id와 result
+- 공통점 : 검색 결과의 한개의 컬럼을 한개의 프로퍼티에 매핑
+- 차이 : 
+   1) id : 객체 인스턴스 비교 시 사용되는 구분자 프로퍼티(기본키)
+   2) result : 유일한 것(기본키) 이외
+-->
+	<resultMap id="selectReservationSchdulMap" type="reservationCalendarVO">
+	   <id property="id" column="RESVE_SN" />
+	   <id property="title" column="RESVE_SJ" />
+	   <id property="unit" column="MTGR_UNIT" />
+	   <id property="start" column="RSV_DE" />
+<!-- 	   <id property="rsvDate" column="RSV_DE" /> -->
+<!-- 	   <id property="start" column="BEGIN_TIME" /> -->
+	   <id property="end" column="END_DE" />
+	   <id property="schdulCn" column="USE_PURPS" />
+	        <association property="extendedProps"  javaType="reservationExtendedPropsVO" >
+	             <result property="calendar"  column="calendar" />
+	        </association>
+	</resultMap>
+
+	<!-- 예약일정 조회 -->
+	<select id="selectReservationSchdul" resultMap="selectReservationSchdulMap">
+		SELECT 
+			A.RESVE_SN, 
+			A.RESVE_SJ,
+			B.MTGR_UNIT, 
+			C.EMP_NO, 
+			A.RSV_DE, 
+			A.BEGIN_TIME, 
+			A.END_TIME, 
+			A.USE_PURPS,
+			A.END_DE
+		FROM MTGR_RESVE A, MTGR B, EMP C
+		WHERE A.MTGR_UNIT = B.MTGR_UNIT
+		AND A.EMP_NO = C.EMP_NO
+		AND A.DELETE_YN = 'N'
+			
+	</select>
+	
+
+	<!-- 회의실 목록 조회 -->
+	<select id="mtgrList" resultType="hashMap">
+		SELECT T.*
+	     FROM (SELECT 
+		            ROW_NUMBER() OVER (ORDER BY MTGR_UNIT) AS RNUM,
+		            MTGR_UNIT, 
+	                MTGR_NM, 
+	                MTGR_LC, 
+	                ACEPTNC_NMPR
+		        FROM MTGR
+		        ORDER BY MTGR_UNIT) T
+		WHERE T.RNUM BETWEEN #{currentPage}*10-9 AND #{currentPage}*10
+	</select>
+	
+	<!-- 회의실 수 -->
+	<select id="mtgrListCount" resultType="int">
+		SELECT COUNT(*) FROM MTGR
+	</select>
+	
+	<!-- 회의실 등록 -->
+	<insert id="insertMtgr" parameterType="mtgrVO">
+		INSERT INTO MTGR (
+		    MTGR_UNIT, MTGR_NM, MTGR_LC, ACEPTNC_NMPR )
+		VALUES (
+		    #{mtgrUnit}, #{mtgrNm}, #{mtgrLc}, #{aceptncNmpr} )
+	</insert>
+	
+	<!-- 회의실 중복여부 -->
+	<select id="selectMtgr" parameterType="mtgrVO" resultType="int">
+		SELECT COUNT(*)
+		  FROM MTGR
+		 WHERE MTGR_UNIT = #{mtgrUnit}
+	</select>
+	
+	<!-- 회의실 삭제 -->
+	<delete id="deleteMtgr" parameterType="int">
+		DELETE FROM MTGR WHERE MTGR_UNIT = #{mtgrUnit}
+	</delete>
+	
+	<!-- 예약일정에 회의실이 있는지 확인여부 -->
+	<select id="selectMtgrResve" parameterType="mtgrResveVO" resultType="int">
+		SELECT COUNT(*) FROM MTGR_RESVE
+		WHERE MTGR_UNIT = #{mtgrUnit}
+	</select>
+	<!-- 회의실 목록 조회 -->
+	<select id="mtgrUnitList" resultType="hashMap">
+		SELECT MTGR_UNIT, MTGR_NM, MTGR_LC, ACEPTNC_NMPR
+		FROM MTGR
+		ORDER BY MTGR_UNIT
+	</select>
+	
+	<!-- 회의실 예약일정 등록 -->
+	<insert id="insertMtgrResev" parameterType="mtgrResveVO">
+		INSERT INTO MTGR_RESVE(
+    		RESVE_SN, MTGR_UNIT, EMP_NO, RSV_DE, BEGIN_TIME, END_TIME, USE_PURPS, RESVE_SJ, END_DE)
+		VALUES(
+    		 #{resveSn}, #{mtgrUnit}, #{empNo}, TO_DATE(#{rsvDe},'YYYY-MM-DD HH24:MI:SS'),
+    		 #{beginTime}, #{endTime}, #{usePurps}, #{resveSj}, TO_DATE(#{endDe},'YYYY-MM-DD HH24:MI:SS'))
+	</insert>
+	
+	<!-- 회의실 예약일정 수정 -->
+	<update id="updateMtgrResev" parameterType="mtgrResveVO">
+	UPDATE MTGR_RESVE
+		SET MTGR_UNIT=#{mtgrUnit},RSV_DE=TO_DATE(#{rsvDe},'YYYY-MM-DD HH24:MI:SS'), 
+			BEGIN_TIME=#{beginTime}, END_TIME=#{endTime}, USE_PURPS=#{usePurps}, RESVE_SJ=#{resveSj},
+			END_DE=TO_DATE(#{endDe},'YYYY-MM-DD HH24:MI:SS')
+		WHERE EMP_NO = #{empNo}
+		AND RESVE_SN = #{resveSn}
+	</update>
+	
+	<!-- 회의실 예약 취소 -->
+	<update id="deleteMtgrResev" parameterType="int">
+		UPDATE MTGR_RESVE
+		SET 
+		DELETE_YN = 'Y'
+		WHERE RESVE_SN = #{resveSn}
+	</update>
+	
+	<!-- 회의실 예약 취소내역 조회 -->
+	<select id="mtgrResevCancelList" resultType="hashMap">
+		SELECT A.RESVE_SN, A.RESVE_SJ, B.MTGR_UNIT, C.EMP_NO, SUBSTR(TO_CHAR(A.RSV_DE, 'YYYY"년"MM"월"DD"일"'),1,11) AS RSV_DE, A.BEGIN_TIME, 
+			   A.END_TIME, A.USE_PURPS, A.END_DE, C.EMP_NM, B.MTGR_NM
+		  FROM MTGR_RESVE A, MTGR B, EMP C
+		 WHERE A.MTGR_UNIT = B.MTGR_UNIT
+		   AND A.EMP_NO = C.EMP_NO
+		   AND A.DELETE_YN = 'Y'
+	</select>
+	
+	<!-- 예약 담당자 확인 여부 -->
+	<select id="selectWriter" parameterType="mtgrResveVO" resultType="int">
+		SELECT COUNT(*)
+        FROM MTGR_RESVE 
+        WHERE EMP_NO = #{empNo}
+        AND RESVE_SN = #{resveSn}
+	</select>
+	
+	<!-- 예약 중복 확인 여부 -->
+	<select id="selectResev" parameterType="mtgrResveVO" resultType="int">
+		SELECT COUNT(*)
+		  FROM MTGR_RESVE 
+		 WHERE MTGR_UNIT = #{mtgrUnit}
+  		   AND TO_CHAR(RSV_DE, 'YYYY-MM-DD HH24:MI:SS') = #{rsvDe}
+  		   AND BEGIN_TIME = #{beginTime}
+  		   AND END_TIME = #{endTime}
+  		   AND DELETE_YN = 'N'
+	</select>
+</mapper>
+
+
+
+
+
+
+
+
+
+

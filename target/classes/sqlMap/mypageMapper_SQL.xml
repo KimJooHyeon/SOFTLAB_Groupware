@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 
+* id와 result
+- 공통점 : 검색 결과의 한개의 컬럼을 한개의 프로퍼티에 매핑
+- 차이 : 
+   1) id : 객체 인스턴스 비교 시 사용되는 구분자 프로퍼티(기본키)
+   2) result : 유일한 것(기본키) 이외
+-->
+
+<mapper namespace="kr.or.ddit.mypage.mapper.MypageMapper">
+
+	<!-- 직급 가져오기 -->
+	<select id="selectClsf" resultType="String">
+		SELECT FN_GETCLSF(#{clsfCode}) FROM DUAL
+	</select>
+	
+	<!-- 비밀번호 수정 -->
+	<update id="updatePassword" parameterType="empVO">
+		UPDATE EMP
+		SET PASSWORD=#{password}
+		WHERE EMP_NO = #{empNo}
+	</update>	
+
+	<!-- 휴대폰번호 수정 -->
+	<update id="updatePhoneNum" parameterType="empVO">
+		UPDATE EMP
+		SET PHONENUM=#{phonenum}
+		WHERE EMP_NO = #{empNo}
+	</update>
+
+	<!-- 직원 휴대폰번호 정보 -->
+	<select id="phoneCheck" parameterType="String" resultType="int">
+		SELECT COUNT(*)
+		FROM EMP
+		WHERE PHONENUM = #{phonenum}
+	</select>
+</mapper>
+
+
+
+
+

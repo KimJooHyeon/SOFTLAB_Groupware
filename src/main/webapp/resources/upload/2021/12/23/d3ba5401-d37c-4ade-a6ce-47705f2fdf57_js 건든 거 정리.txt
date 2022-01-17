@@ -1,0 +1,9 @@
+table-datatables-basic.min.js 194줄부터 icons 이름 지움
+
+app-user-edit.js 55줄부터 이름 바꿈
+
+components.min.js 737줄에 추가
+
+app-calendar.js
+app-calendar-events.js
+

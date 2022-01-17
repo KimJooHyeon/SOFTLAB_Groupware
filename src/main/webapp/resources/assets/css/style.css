@@ -1,0 +1,28 @@
+* {
+	font-family: 'Nanum Gothic', sans-serif;
+}
+
+#event-description-editor{
+	height: 200px;
+}
+
+.author_rowContent:hover > * {
+  background: whitesmoke;
+  transition: transform 0.25s ease;
+  transform: translateY(-1px); }
+
+.breadcrumb-item:hover {
+	cursor: default;
+}
+
+@import
+	url('https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&display=swap')
+	;
+
+.time, .dark-layout h1 {
+	color: #7367F0;
+}
+
+.widget:hover {
+	opacity: .7;
+}

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 
+* id와 result
+- 공통점 : 검색 결과의 한개의 컬럼을 한개의 프로퍼티에 매핑
+- 차이 : 
+   1) id : 객체 인스턴스 비교 시 사용되는 구분자 프로퍼티(기본키)
+   2) result : 유일한 것(기본키) 이외
+-->
+<mapper namespace="kr.or.ddit.schdul.mapper.SchdulMapper">
+	<resultMap id="selectSchdulMap" type="calendarVO">
+	   <id property="id" column="SCHDUL_SN" />
+	   <id property="title" column="SCHDUL_SJ" />
+	   <id property="schdulCn" column="SCHDUL_CN" />
+	   <id property="schdulSeCode" column="SCHDUL_SE_CODE" />
+	   <id property="start" column="BGN_DE" />
+	   <id property="end" column="END_DE" />
+	   <id property="allDay" column="ALLDAY_YN" />
+	   <id property="deptCode" column="DEPT_CODE" />
+	        <association property="extendedProps"  javaType="extendedPropsVO" >
+	             <result property="calendar"  column="calendar" />
+	        </association>
+	</resultMap>
+
+	<select id="selectSchdul" parameterType="String" resultMap="selectSchdulMap">
+		SELECT 
+			SCHDUL_SN,
+			SCHDUL_SJ,
+			SCHDUL_CN,
+			SCHDUL_SE_CODE,
+			BGN_DE ,
+			END_DE ,
+			ALLDAY_YN,
+			DEPT_CODE, 
+			        CASE WHEN SCHDUL_SE_CODE = 'S1' THEN 'Personal' 
+			             WHEN SCHDUL_SE_CODE = 'S2' THEN 'Family' 
+			             WHEN SCHDUL_SE_CODE = 'S3' THEN 'Holiday' 
+			             ELSE ''
+			        END calendar
+		FROM   SCHDUL A, EMP B
+		WHERE (A.EMP_NO = #{empNo} OR SCHDUL_SE_CODE = 'S3' OR B.DEPT_CODE = (SELECT DEPT_CODE FROM EMP WHERE EMP_NO = #{empNo})) 
+		AND A.EMP_NO = B.EMP_NO
+		AND	   DELETE_YN = 'N'
+			
+	</select>
+	<select id="selectPrivate" parameterType="String" resultMap="selectSchdulMap">
+		SELECT 
+			SCHDUL_SN,
+			SCHDUL_SJ,
+			SCHDUL_CN,
+			SCHDUL_SE_CODE,
+			BGN_DE ,
+			END_DE ,
+			ALLDAY_YN,
+			DEPT_CODE, 
+			        CASE WHEN SCHDUL_SE_CODE = 'S1' THEN 'Personal' 
+			             WHEN SCHDUL_SE_CODE = 'S2' THEN 'Family' 
+			             WHEN SCHDUL_SE_CODE = 'S3' THEN 'Holiday' 
+			             ELSE ''
+			        END calendar
+		FROM   SCHDUL A, EMP B
+		WHERE (A.EMP_NO = #{empNo} AND SCHDUL_SE_CODE = 'S1') 
+		AND A.EMP_NO = B.EMP_NO
+		AND	   DELETE_YN = 'N'
+			
+	</select>
+	<select id="selectDepartment" parameterType="String" resultMap="selectSchdulMap">
+		SELECT 
+			SCHDUL_SN,
+			SCHDUL_SJ,
+			SCHDUL_CN,
+			SCHDUL_SE_CODE,
+			BGN_DE ,
+			END_DE ,
+			ALLDAY_YN,
+			DEPT_CODE, 
+			        CASE WHEN SCHDUL_SE_CODE = 'S1' THEN 'Personal' 
+			             WHEN SCHDUL_SE_CODE = 'S2' THEN 'Family' 
+			             WHEN SCHDUL_SE_CODE = 'S3' THEN 'Holiday' 
+			             ELSE ''
+			        END calendar
+		FROM   SCHDUL A, EMP B
+		WHERE (SCHDUL_SE_CODE = 'S2' AND B.DEPT_CODE = (SELECT DEPT_CODE FROM EMP WHERE EMP_NO = #{empNo})) 
+		AND A.EMP_NO = B.EMP_NO
+		AND	   DELETE_YN = 'N'
+			
+	</select>
+	<select id="selectSoftLab" resultMap="selectSchdulMap">
+		SELECT 
+			SCHDUL_SN,
+			SCHDUL_SJ,
+			SCHDUL_CN,
+			SCHDUL_SE_CODE,
+			BGN_DE ,
+			END_DE ,
+			ALLDAY_YN,
+			DEPT_CODE, 
+			        CASE WHEN SCHDUL_SE_CODE = 'S1' THEN 'Personal' 
+			             WHEN SCHDUL_SE_CODE = 'S2' THEN 'Family' 
+			             WHEN SCHDUL_SE_CODE = 'S3' THEN 'Holiday' 
+			             ELSE ''
+			        END calendar
+		FROM   SCHDUL A, EMP B
+		WHERE SCHDUL_SE_CODE = 'S3' 
+		AND A.EMP_NO = B.EMP_NO
+		AND	   DELETE_YN = 'N'
+			
+	</select>
+
+<!-- ====================================================================== -->
+	
+	<!-- 일정 등록 -->
+	<insert id="insertSchdul" parameterType="schdulVO">
+		INSERT INTO SCHDUL(SCHDUL_SN, EMP_NO, SCHDUL_SJ, SCHDUL_CN, SCHDUL_SE_CODE, BGN_DE, END_DE)
+		VALUES(#{schdulSn},#{empNo},#{schdulSj},#{schdulCn},#{schdulSeCode},#{bgnDe},#{endDe})
+	</insert>
+	
+	<!-- 일정 수정 -->
+	<update id="updateSchdul" parameterType="schdulVO">
+		UPDATE SCHDUL 
+		SET 
+		SCHDUL_SJ = #{schdulSj}, SCHDUL_CN = #{schdulCn}, SCHDUL_SE_CODE = #{schdulSeCode}, BGN_DE = #{bgnDe}, END_DE = #{endDe}
+		WHERE SCHDUL_SN = #{schdulSn}
+	</update>
+	
+	<!-- 일정 삭제 -->
+	<update id="deleteSchdul" parameterType="int">
+		UPDATE SCHDUL
+		SET 
+		DELETE_YN = 'Y'
+		WHERE SCHDUL_SN = #{schdulSn}
+	</update>
+	
+	<select id="selectWriter" parameterType="schdulVO" resultType="int">
+		SELECT COUNT(*)
+        FROM SCHDUL 
+        WHERE EMP_NO = #{empNo}
+        AND SCHDUL_SN = #{schdulSn}
+	</select>
+	
+	<select id="schdulSnCheck" parameterType="int" resultType="int">
+		SELECT count(*) FROM SCHDUL WHERE SCHDUL_SN = #{number}
+	</select>
+	
+	
+<!-- ====================================================================== -->
+
+</mapper>
+
+
+
+
+

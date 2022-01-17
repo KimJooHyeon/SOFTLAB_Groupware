@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.or.ddit.bbs.mapper.AnswerMapper">
+<!-- 	<resultMap type="hashMap" id="noticeMap"> -->
+<!-- 		<result column="BBSCTT_SN" property="BBSCTT_SN"/>          -->
+<!-- 		<result column="BBSCTT_SJ" property="BBSCTT_SJ"/>        -->
+<!-- 		<result column="EMP_NM" property="EMP_NM"/> -->
+<!-- 		<result column="BBSCTT_CN" property="BBSCTT_CN" jdbcType="CLOB" javaType="java.lang.String"/> -->
+<!-- 		<result column="WRITNG_DE" property="WRITNG_DE"/> -->
+<!-- 		<result column="BBSCTT_RDCNT" property="BBSCTT_RDCNT"/> -->
+<!-- 		<result column="FILE_SN" property="FILE_SN"/> -->
+<!-- 	</resultMap> -->
+	
+	<!-- 해당 글 댓글 보기 -->
+	<select id="selectAnswer" resultType="hashMap" parameterType="String">
+		SELECT 
+			ANSWER_SN,
+			A.EMP_NO EMP_NO,
+			EMP_NM,
+			DEPT_NM,
+			ANSWER_CN, 
+			A.WRITNG_DE WRITNG_DE,
+			UPD_DE
+		FROM ANSWER A, BBS B, EMP C, DEPT D
+		WHERE A.EMP_NO = C.EMP_NO
+		AND C.DEPT_CODE = D.DEPT_CODE
+		AND A.BBSCTT_SN = B.BBSCTT_SN
+		AND B.BBSCTT_SN = #{bbscttSn}
+		ORDER BY ANSWER_SN DESC
+	</select>
+	
+	<!-- 댓글 삭제 -->
+	<delete id="deleteAnswer" parameterType="int">
+		DELETE FROM ANSWER
+		WHERE ANSWER_SN = #{answerSn}
+	</delete>
+	
+	<!-- 댓글 추가 -->
+	<insert id="insertAnswer" parameterType="answerVO">
+		INSERT INTO ANSWER(ANSWER_SN,BBSCTT_SN,EMP_NO,ANSWER_CN,WRITNG_DE)
+		VALUES((SELECT MAX(ANSWER_SN) + 1 FROM ANSWER), #{bbscttSn}, #{empNo}, #{answerCn}, #{writngDe})
+	</insert>
+	
+	<!-- 댓글 수정 -->
+	<update id="updateAnswer" parameterType="answerVO">
+		UPDATE ANSWER
+		SET ANSWER_CN = #{answerCn}, UPD_DE = #{updDe}
+		WHERE ANSWER_SN = #{answerSn}
+	</update>
+	
+</mapper>

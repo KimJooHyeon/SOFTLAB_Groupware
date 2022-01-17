@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 
+* id와 result
+- 공통점 : 검색 결과의 한개의 컬럼을 한개의 프로퍼티에 매핑
+- 차이 : 
+   1) id : 객체 인스턴스 비교 시 사용되는 구분자 프로퍼티(기본키)
+   2) result : 유일한 것(기본키) 이외
+-->
+
+<mapper namespace="kr.or.ddit.author.mapper.AuthorMapper">
+	
+	<!-- 권한 목록-->
+	<select id="selectAuthor" resultType="hashMap">
+		SELECT C.AUTHOR_EMP, A.EMP_NO, A.EMP_NM, B.DEPT_NM, FN_GETCLSF(A.CLSF_CODE) CLSF, C.HR, C.INT, C.VCT, C.BNT
+		FROM EMP A, DEPT B, (SELECT EMP_NO AS AUTHOR_EMP
+				    ,COUNT(CASE WHEN AUTHOR_CODE='HR' AND AUTHOR_AT='Y' THEN 1 END) AS HR
+				    ,COUNT(CASE WHEN AUTHOR_CODE='INT' AND AUTHOR_AT='Y' THEN 1 END) AS INT
+				    ,COUNT(CASE WHEN AUTHOR_CODE='VCT' AND AUTHOR_AT='Y' THEN 1 END) AS VCT
+				    ,COUNT(CASE WHEN AUTHOR_CODE='BNT' AND AUTHOR_AT='Y' THEN 1 END) AS BNT
+				FROM 
+				    AUTHOR_EMP
+				GROUP BY
+				    EMP_NO) C
+		WHERE C.AUTHOR_EMP = A.EMP_NO
+		    AND A.DEPT_CODE = B.DEPT_CODE
+		ORDER BY CLSF_CODE, EMP_NO
+	</select>
+	
+	<!-- 직원검색 -->
+	<select id="searchEmp" resultType="hashMap" parameterType="String">
+		SELECT C.AUTHOR_EMP, A.EMP_NO, A.EMP_NM, B.DEPT_NM, FN_GETCLSF(A.CLSF_CODE) CLSF, C.HR, C.INT, C.VCT, C.BNT
+		FROM EMP A, DEPT B, (SELECT EMP_NO AS AUTHOR_EMP
+		            ,COUNT(CASE WHEN AUTHOR_CODE='HR' AND AUTHOR_AT='Y' THEN 1 END) AS HR
+		            ,COUNT(CASE WHEN AUTHOR_CODE='INT' AND AUTHOR_AT='Y' THEN 1 END) AS INT
+		            ,COUNT(CASE WHEN AUTHOR_CODE='VCT' AND AUTHOR_AT='Y' THEN 1 END) AS VCT
+		            ,COUNT(CASE WHEN AUTHOR_CODE='BNT' AND AUTHOR_AT='Y' THEN 1 END) AS BNT
+		        FROM 
+		            AUTHOR_EMP
+		        GROUP BY
+		            EMP_NO) C
+		WHERE 1=1
+		  AND C.AUTHOR_EMP = A.EMP_NO
+		  AND A.DEPT_CODE = B.DEPT_CODE
+		  AND EMP_NM LIKE '%'||#{keyword}||'%'
+		ORDER BY CLSF_CODE, DEPT_NM
+	</select>
+	
+	<!-- 부서로 직원 목록 -->
+	<select id="selectByDept" resultType="hashMap" parameterType="hashMap">
+		SELECT C.AUTHOR_EMP, A.EMP_NO, A.EMP_NM, B.DEPT_NM, FN_GETCLSF(A.CLSF_CODE) CLSF, C.HR, C.INT, C.VCT, C.BNT
+		FROM EMP A, DEPT B, (SELECT EMP_NO AS AUTHOR_EMP
+		            ,COUNT(CASE WHEN AUTHOR_CODE='HR' AND AUTHOR_AT='Y' THEN 1 END) AS HR
+		            ,COUNT(CASE WHEN AUTHOR_CODE='INT' AND AUTHOR_AT='Y' THEN 1 END) AS INT
+		            ,COUNT(CASE WHEN AUTHOR_CODE='VCT' AND AUTHOR_AT='Y' THEN 1 END) AS VCT
+		            ,COUNT(CASE WHEN AUTHOR_CODE='BNT' AND AUTHOR_AT='Y' THEN 1 END) AS BNT
+		        FROM 
+		            AUTHOR_EMP
+		        GROUP BY
+		            EMP_NO) C
+		WHERE 1=1
+		  AND C.AUTHOR_EMP = A.EMP_NO
+		  AND A.DEPT_CODE = B.DEPT_CODE
+		  AND (A.DEPT_CODE = #{dept} OR A.DEPT_CODE = #{team})
+		ORDER BY CLSF_CODE, DEPT_NM
+	</select>	
+	
+	<!-- 권한 수정 -->
+	<update id="updateAuthor" parameterType="hashMap">
+		UPDATE AUTHOR_EMP
+		SET AUTHOR_AT = #{authorAt}
+		WHERE EMP_NO = #{empNo}
+		AND AUTHOR_CODE = #{authorCode}
+	</update>
+	
+</mapper>
+
+
+
+
+

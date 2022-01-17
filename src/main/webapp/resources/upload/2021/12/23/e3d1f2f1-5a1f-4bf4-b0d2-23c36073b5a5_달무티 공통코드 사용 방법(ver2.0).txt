@@ -1,0 +1,70 @@
+FN_GETCLSF(NUMBER) : 
+직급 가져오기
+FN_GETBBSBE(NUMBER) : 
+게시판 종류 가져오기
+FN_GETCRTFSE(NUMBER) : 
+증명서 종류 가져오기
+FN_GETSANCTNFORM(NUMBER) : 
+결재 양식 가져오기
+FN_GETSANCTNMTH(NUMBER) : 
+결재 방법 가져오기
+FN_GETSANCTNSTTUS(NUMBER) : 
+결재 상태 가져오기
+
+ex) 
+SELECT EMPNO, FN_GETCLSF(CLSFNO) AS CLSF  FROM EMP
+WHERE 1=1
+AND CLSFNO < 5;
+
+-------------------------------------------------------------------------------------------------------
+
+WORKSTLENO 근무형태코드 3
+- 일반 1
+- 휴가 2 
+- 출장 3
+
+SCHDULSENO 일정구분코드 3
+- 개인 1
+- 부서 2
+- 전체 3
+
+VCATNSENO 휴가구분코드 7
+- 연차	  1
+- 반차	  2
+- 생리휴가 3
+- 병가	  4
+- 경조휴가 5
+- 출산휴가 6
+- 포상휴가 7
+
+CLSFNO 직급코드 7
+- 대표 1
+- 이사 2
+- 부장 3
+- 차장 4 
+- 과장 5 
+- 대리 6 
+- 사원 7 
+
+CRTFSENO 증명서구분코드 2
+- 재직증명서 1
+- 경력증명서 2
+
+BBSSENO 게시판구분코드 2
+- 공지사항 1
+- 자료실    2
+
+SANCTNSTTUSNO 결재상태코드 3
+- 진행중 1 
+- 승인    2
+- 반려    3
+
+SANCTNMTHNO 결재방법코드 2
+- 결재 1 
+- 합의 2
+
+SANCTNFORMNO 결재양식코드 4
+- 일반 	     1
+- 휴가신청    2 
+- 출장신청    3
+- 증명서신청 4

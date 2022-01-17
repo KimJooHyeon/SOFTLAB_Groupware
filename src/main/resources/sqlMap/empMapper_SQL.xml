@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 
+* id와 result
+- 공통점 : 검색 결과의 한개의 컬럼을 한개의 프로퍼티에 매핑
+- 차이 : 
+   1) id : 객체 인스턴스 비교 시 사용되는 구분자 프로퍼티(기본키)
+   2) result : 유일한 것(기본키) 이외
+-->
+<mapper namespace="kr.or.ddit.hr.mapper.EmpMapper">
+	
+	<!-- 재직자 직원목록 -->
+	<select id="selectIng" resultType="hashMap" parameterType="hashMap">
+		SELECT T.*
+		FROM 
+			(SELECT 
+	            ROW_NUMBER() OVER (ORDER BY CLSF_CODE, EMP_NO) AS RNUM,
+	            A.EMP_NO EMP_NO,
+	            B.DEPT_NM DEPT_NM,
+	            A.EMP_NM EMP_NM,
+	            FN_GETCLSF(A.CLSF_CODE) CLSF,
+	            SUBSTR(A.LXTN_NO,1,3) || '-' || SUBSTR(A.LXTN_NO,4,3) || '-' || SUBSTR(A.LXTN_NO,7,4) LXTN_NO,
+	            ENCPN_DE
+	        FROM EMP A, DEPT B, CMMNCODE C
+	        WHERE 1=1
+	          AND A.DEPT_CODE = B.DEPT_CODE
+	          AND FN_GETCLSF(A.CLSF_CODE) = C.CODE_NM
+	          AND RETIRE_DE IS NULL
+	        ORDER BY CLSF_CODE, EMP_NO) T
+		WHERE T.RNUM BETWEEN #{currentPage}*10-9 AND #{currentPage}*10
+	</select>
+	<!-- 재직자 수 -->
+	<select id="selectIngCount" resultType="int">
+		SELECT COUNT(*) FROM EMP
+    	WHERE RETIRE_DE IS NULL
+	</select>
+	
+	<!-- 퇴직자 직원목록 -->
+	<select id="selectRetire" resultType="hashMap" parameterType="hashMap">
+		SELECT T.*
+		FROM 
+            (SELECT 
+                ROW_NUMBER() OVER (ORDER BY TO_DATE(RETIRE_DE) DESC) AS RNUM,
+                A.EMP_NO EMP_NO,
+                B.DEPT_NM DEPT_NM,
+                A.EMP_NM EMP_NM,
+                FN_GETCLSF(A.CLSF_CODE) CLSF,
+                SUBSTR(A.LXTN_NO,1,3) || '-' || SUBSTR(A.LXTN_NO,4,3) || '-' || SUBSTR(A.LXTN_NO,7,4) LXTN_NO,
+                RETIRE_DE
+            FROM EMP A, DEPT B, CMMNCODE C
+            WHERE 1=1
+              AND A.DEPT_CODE = B.DEPT_CODE
+              AND FN_GETCLSF(A.CLSF_CODE) = C.CODE_NM
+              AND RETIRE_DE IS NOT NULL
+            ORDER BY TO_DATE(RETIRE_DE) DESC) T
+		WHERE T.RNUM BETWEEN #{currentPage}*10-9 AND #{currentPage}*10
+	</select>
+	<!-- 퇴직자 수 -->
+	<select id="selectRetireCount" resultType="int">
+		SELECT COUNT(*) FROM EMP
+    	WHERE RETIRE_DE IS NOT NULL
+	</select>
+	
+	
+	<!--직원검색 -->
+	<select id="searchEmp" resultType="hashMap" parameterType="hashMap">
+		SELECT T.*
+		FROM
+			(SELECT 
+				ROW_NUMBER() OVER (ORDER BY CLSF_CODE, DEPT_NM) AS RNUM,
+				A.EMP_NO EMP_NO,
+				B.DEPT_NM DEPT_NM,
+				A.EMP_NM EMP_NM,
+				FN_GETCLSF(A.CLSF_CODE) CLSF,
+				SUBSTR(A.LXTN_NO,1,3) || '-' || SUBSTR(A.LXTN_NO,4,3) || '-' || SUBSTR(A.LXTN_NO,7,4) LXTN_NO,
+				ENCPN_DE,
+				RETIRE_DE
+			FROM EMP A, DEPT B, CMMNCODE C
+			WHERE 1=1
+			  AND A.DEPT_CODE = B.DEPT_CODE
+			  AND FN_GETCLSF(A.CLSF_CODE) = C.CODE_NM
+			  AND (EMP_NM LIKE '%'||#{keyword}||'%' OR EMP_NO LIKE '%'||#{keyword}||'%')
+	  		<if test="dept != null">
+			  AND (A.DEPT_CODE = #{dept} OR A.DEPT_CODE = #{team})
+			</if>
+			ORDER BY CLSF_CODE, DEPT_NM) T
+		WHERE T.RNUM BETWEEN #{currentPage}*10-9 AND #{currentPage}*10
+	</select>
+	
+	<!-- 직원 검색 결과 수 -->
+	<select id="searchEmpCount" resultType="int" parameterType="String">
+		SELECT 
+			COUNT(*)
+		FROM EMP A, DEPT B, CMMNCODE C
+		WHERE 1=1
+		  AND A.DEPT_CODE = B.DEPT_CODE
+		  AND FN_GETCLSF(A.CLSF_CODE) = C.CODE_NM
+		  AND (EMP_NM LIKE '%'||#{keyword}||'%' OR EMP_NO LIKE '%'||#{keyword}||'%')
+		ORDER BY CLSF_CODE, DEPT_NM
+	</select>
+	
+	<!-- 부서로 직원 목록 -->
+	<select id="selectByDept" resultType="hashMap" parameterType="hashMap">
+		SELECT T.*
+		FROM 
+			(SELECT 
+				ROW_NUMBER() OVER (ORDER BY CLSF_CODE, EMP_NO) AS RNUM,
+				A.EMP_NO EMP_NO,
+				B.DEPT_NM DEPT_NM,
+				A.EMP_NM EMP_NM,
+				FN_GETCLSF(A.CLSF_CODE) CLSF,
+				SUBSTR(A.LXTN_NO,1,3) || '-' || SUBSTR(A.LXTN_NO,4,3) || '-' || SUBSTR(A.LXTN_NO,7,4) LXTN_NO,
+				ENCPN_DE,
+				RETIRE_DE
+			FROM EMP A, DEPT B, CMMNCODE C
+			WHERE 1=1
+			  AND A.DEPT_CODE = B.DEPT_CODE
+			  AND FN_GETCLSF(A.CLSF_CODE) = C.CODE_NM
+			  AND (A.DEPT_CODE = #{dept} OR A.DEPT_CODE = #{team})
+			ORDER BY CLSF_CODE, EMP_NO) T
+		WHERE T.RNUM BETWEEN #{currentPage}*10-9 AND #{currentPage}*10
+	</select>
+	<!-- 부서 구분 결과 수 -->
+	<select id="selectByDeptCount" resultType="int" parameterType="hashMap">
+		SELECT 
+			COUNT(*)
+		FROM EMP A, DEPT B, CMMNCODE C
+		WHERE 1=1
+		  AND A.DEPT_CODE = B.DEPT_CODE
+		  AND FN_GETCLSF(A.CLSF_CODE) = C.CODE_NM
+		  AND (A.DEPT_CODE = #{dept} OR A.DEPT_CODE = #{team})
+		ORDER BY CLSF_CODE, EMP_NO
+	</select>
+	
+	
+	
+
+<!-- ====================================================================== -->
+	
+	<!-- 직원 등록 -->
+	<insert id="insertEmp" parameterType="empVO">
+		INSERT INTO EMP(
+			EMP_NO, DEPT_CODE, CLSF_CODE, EMP_NM, ADRES1, ADRES2,ZIP,
+			BRTHDY, PASSWORD, EMAIL, LXTN_NO, ENCPN_DE,
+			PHOTO_FLPTH)
+		VALUES(
+			#{empNo},#{deptVO.deptCode},#{clsfCode},#{empNm},#{adres1},#{adres2},#{zip},
+			#{brthdy},#{password},#{email},#{lxtnNo},#{encpnDe},
+			#{photoFlpth})
+	</insert>
+	<!-- 기본 권한 자동 부여 -->
+	<insert id="insertAuthor" parameterType="hashMap">
+		INSERT INTO AUTHOR_EMP
+		VALUES(#{authorCode}, #{empNo}, #{authorAt})
+	</insert>
+	
+	<!-- 직원번호 자동생성 -->
+	<select id="createEmpNo" resultType="String">
+		SELECT NVL(MAX(TO_NUMBER(EMP_NO)),0)+1 FROM EMP
+	</select>
+	
+	<!-- 직원내선번호 자동생성 -->
+	<select id="createLxtnNo" resultType="String">
+		SELECT '0' || TO_CHAR(NVL(MAX(TO_NUMBER(LXTN_NO)),0)+1) 
+		FROM EMP
+		WHERE EMP_NO != '100000' AND EMP_NO != '100100' AND EMP_NO != '100200' AND EMP_NO != '100300'
+	</select>
+<!-- ====================================================================== -->
+
+	<!-- 직원 상세 정보 불러오기 -->
+	<select id="detailEmp" resultType="empVO" parameterType="String">
+		SELECT 
+			A.*, B.DEPT_NM DEPT_NM,
+			FN_GETCLSF(A.CLSF_CODE) CLSF
+		FROM EMP A, DEPT B, CMMNCODE C
+		WHERE 1=1
+		  AND A.DEPT_CODE = B.DEPT_CODE
+		  AND FN_GETCLSF(A.CLSF_CODE) = C.CODE_NM
+		  AND EMP_NO = #{empNo}
+		ORDER BY CLSF_CODE, DEPT_NM
+	</select>
+	
+	<!-- 부서 가져오기 -->	
+	<select id="selectDept" resultType="deptVO" parameterType="String">
+		SELECT B.*
+		FROM EMP A, DEPT B
+		WHERE 1=1
+		  AND A.DEPT_CODE = B.DEPT_CODE
+		  AND EMP_NO = #{empNo}
+	</select>
+	
+	<!-- 직원 정보 수정 -->
+	<update id="updateEmp" parameterType="empVO">
+		UPDATE EMP
+		SET DEPT_CODE=#{deptVO.deptCode},CLSF_CODE=#{clsfCode}, 
+			EMP_NM=#{empNm}, ADRES1=#{adres1}, ADRES2=#{adres2}, ZIP=#{zip},
+			BRTHDY=#{brthdy}, EMAIL=#{email}, ENCPN_DE=#{encpnDe}
+		WHERE EMP_NO = #{empNo}
+	</update>
+	
+	<!-- 퇴사 처리 -->
+	<update id="retireEmp" parameterType="empVO">
+		UPDATE EMP
+		SET RETIRE_DE=#{retireDe}
+		WHERE EMP_NO = #{empNo}
+	</update>
+	
+<!-- 다윤~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->	
+ 
+<select id="deptEmpList" resultType="empVO">
+	SELECT B.DEPT_NM, B.DEPT_CODE, B.UPPER_DEPT_CODE, FN_GETCLSF(CLSF_CODE) AS CLSF_CODE, 
+	       A.EMP_NM, A.EMP_NO, B.LVL, B.DEPT_ORD
+	FROM EMP A, (SELECT DEPT_CODE, DPRLR_EMP_NO, UPPER_DEPT_CODE, DEPT_NM, DEPT_ORD, LEVEL LVL
+                FROM  DEPT
+                START WITH UPPER_DEPT_CODE IS NULL
+                CONNECT BY PRIOR DEPT_CODE = UPPER_DEPT_CODE
+                ORDER BY DEPT_ORD) B
+	WHERE A.DEPT_CODE = B.DEPT_CODE
+	AND RETIRE_DE IS NULL
+	ORDER BY B.DEPT_ORD ASC, A.CLSF_CODE ASC, A.EMP_NM ASC
+</select> 
+
+<!-- 부서 조회 -->
+<select id="deptList" resultType="deptVO">
+	SELECT DEPT_NM, DEPT_CODE, UPPER_DEPT_CODE, LEVEL LVL
+	FROM DEPT
+	START WITH UPPER_DEPT_CODE IS NULL
+	CONNECT BY PRIOR DEPT_CODE = UPPER_DEPT_CODE
+	ORDER BY DEPT_ORD
+</select>
+
+<!-- 팀별 조회 -->
+<select id="teamList" resultType="deptVO">
+	SELECT DEPT_NM, DEPT_CODE, UPPER_DEPT_CODE, LEVEL LVL
+	FROM DEPT
+	WHERE LEVEL = 2
+	START WITH UPPER_DEPT_CODE IS NULL
+	CONNECT BY PRIOR DEPT_CODE = UPPER_DEPT_CODE
+	ORDER BY DEPT_ORD
+</select>
+
+<!-- 직원 조회 -->
+<select id="empDetail" parameterType="String" resultType="empVO">
+	SELECT A.EMP_NO, A.EMP_NM, B.DEPT_NM, FN_GETCLSF(CLSF_CODE) AS CLSF_CODE, 
+	       A.BRTHDY, A.EMAIL, A.PHONENUM, A.LXTN_NO,
+	       A.ZIP, A.ADRES1, A.ADRES2, A.ENCPN_DE, A.RETIRE_DE, A.PHOTO_FLPTH
+	FROM EMP A, DEPT B   
+	WHERE A.DEPT_CODE = B.DEPT_CODE
+	AND EMP_NO = #{empNo} 
+</select>
+
+	<!-- 직원 검색 -->
+	<select id="empSearch" parameterType="String" resultType="empVO">
+		SELECT B.DEPT_NM, B.DEPT_CODE, B.UPPER_DEPT_CODE, FN_GETCLSF(CLSF_CODE) AS CLSF_CODE, 
+		       A.EMP_NM, A.EMP_NO, B.LVL, B.DEPT_ORD
+		FROM EMP A, (SELECT DEPT_CODE, DPRLR_EMP_NO, UPPER_DEPT_CODE, DEPT_NM, DEPT_ORD, LEVEL LVL
+	                FROM  DEPT
+	                START WITH UPPER_DEPT_CODE IS NULL
+	                CONNECT BY PRIOR DEPT_CODE = UPPER_DEPT_CODE
+	                ORDER BY DEPT_ORD) B
+		WHERE A.DEPT_CODE = B.DEPT_CODE
+		<if test="keyword != null and keyword != ''">
+	    	AND   A.EMP_NM LIKE '%'||#{keyword}||'%'
+	    </if>
+	    AND RETIRE_DE IS NULL
+		ORDER BY B.DEPT_ORD ASC, A.EMP_NM ASC
+	</select> 
+	
+	<!-- 증명서 신청 임시저장 -->
+	<insert id="insertCrtf" parameterType="hashMap">
+		INSERT INTO CRTF(CRTF_REQST_SN, CRTF_SE_CODE, EMP_NO, REQSTDOC_SJ,
+	    				 REQST_DE, CONFM_AT, CONFM_DE, CRTF_CN, SANCTN_YN)
+		VALUES((SELECT NVL(MAX(CRTF_REQST_SN),0)+1 FROM CRTF), 
+		#{crtfSeCode}, #{empNo}, #{reqstdocSj}, SYSDATE, 'N', #{confmDe}, #{crtfCn}, 'N')
+	</insert>
+	
+	<!-- 증명서 신청 목록(증명서 발급대장) -->
+	<select id="crtfList" parameterType="hashMap" resultType="hashMap">
+		SELECT T.*
+		FROM 
+			(SELECT 
+		            ROW_NUMBER() OVER (ORDER BY CRTF_REQST_SN DESC, REQST_DE DESC) AS RNUM,
+		            A.EMP_NO EMP_NO,
+		            B.EMP_NM EMP_NM,
+		            FN_GETCRTFSE(CRTF_SE_CODE) CRTF_SE_CODE,
+		            A.CRTF_CN CRTF_CN,
+	                A.CRTF_REQST_SN, 
+	                A.REQSTDOC_SJ, 
+				    SUBSTR(TO_CHAR(A.REQST_DE, 'YYYY"년"MM"월"DD"일"'),1,11) AS REQST_DE, 
+	                A.SANCTN_YN,
+				    B.BRTHDY, 
+	                B.ADRES1, 
+	                B.ADRES2, 
+	                D.DEPT_NM, 
+	                FN_GETCLSF(CLSF_CODE) AS CLSF_CODE, 
+	                B.ENCPN_DE,
+				    B.ENCPN_DE AS ENCPNDATE, 
+	                SUBSTR(TO_CHAR(A.REQST_DE, 'YYYY"-"MM"-"DD'),1,11) AS REQUESTDATE
+		       FROM CRTF A, EMP B, CMMNCODE C, DEPT D
+		      WHERE 1=1
+	            AND A.EMP_NO = B.EMP_NO
+	            AND B.DEPT_CODE = D.DEPT_CODE
+		        AND FN_GETCRTFSE(A.CRTF_SE_CODE) = C.CODE_NM
+		        AND A.SANCTN_YN!='C'
+		        AND A.EMP_NO=#{empNo}
+	   	   ORDER BY A.CRTF_REQST_SN DESC, REQST_DE DESC) T
+	WHERE T.RNUM BETWEEN #{currentPage}*10-9 AND #{currentPage}*10
+	 ORDER BY T.CRTF_REQST_SN DESC
+	</select>
+	
+	<!-- 증명서 발급대장 수 -->
+	<select id="crtfListCount" resultType="int" parameterType="String">
+		SELECT COUNT(*) FROM CRTF
+    	WHERE SANCTN_YN!='C'
+    	  AND EMP_NO=#{empNo}
+	</select>
+	
+	<!-- 증명서 신청 취소 -->
+	<update id="deleteCrtf" parameterType="int" >
+	   UPDATE CRTF
+		  SET SANCTN_YN='C'
+		WHERE CRTF_REQST_SN = #{crtfReqstSn}
+		  AND SANCTN_YN='N'
+	</update>
+	
+	<!-- 증명서 발급 -->
+	<select id="crtfDetail" parameterType="int" resultType="crtfreqstVO">
+		SELECT CRTF_REQST_SN, FN_GETCRTFSE(CRTF_SE_CODE) AS CRTF_SE_CODE, A.REQSTDOC_SJ, A.CRTF_CN, 
+			   SUBSTR(TO_CHAR(A.REQST_DE, 'YYYY"년"MM"월"DD"일"'),1,11) AS REQST_DE, B.EMP_NM, A.SANCTN_YN,
+			   B.BRTHDY, B.ADRES1, B.ADRES2, C.DEPT_NM, FN_GETCLSF(CLSF_CODE) AS CLSF_CODE, TO_CHAR(TO_DATE(B.ENCPN_DE), 'YYYY"년"MM"월"DD"일"') AS ENCPN_DE,
+			   B.ENCPN_DE AS ENCPNDATE, SUBSTR(TO_CHAR(A.REQST_DE, 'YYYY"-"MM"-"DD'),1,11) AS REQUESTDATE,
+			   (SELECT EMP_NM FROM EMP WHERE EMP_NO = '100000') AS CEONM
+		  FROM CRTF A, EMP B, DEPT C
+		 WHERE A.EMP_NO = B.EMP_NO
+		   AND B.DEPT_CODE = C.DEPT_CODE
+		   AND A.CRTF_REQST_SN=#{crtfReqstSn}
+	</select>
+
+	
+	<!-- 전직원 증명서 신청 목록 -->
+	<select id="adminCrtfList" parameterType="hashMap" resultType="hashMap">
+		SELECT CRTF_REQST_SN, FN_GETCRTFSE(CRTF_SE_CODE) AS CRTF_SE_CODE, A.REQSTDOC_SJ, A.CRTF_CN, 
+			   SUBSTR(TO_CHAR(A.REQST_DE, 'YYYY"년"MM"월"DD"일"'),1,11) AS REQST_DE, B.EMP_NM, A.SANCTN_YN,
+			   B.BRTHDY, B.ADRES1, B.ADRES2, C.DEPT_NM, FN_GETCLSF(CLSF_CODE) AS CLSF_CODE, B.ENCPN_DE, B.EMP_NO,
+			   B.ENCPN_DE AS ENCPNDATE, SUBSTR(TO_CHAR(A.REQST_DE, 'YYYY"-"MM"-"DD'),1,11) AS REQUESTDATE
+		  FROM CRTF A, EMP B, DEPT C
+		 WHERE A.EMP_NO = B.EMP_NO
+		   AND B.DEPT_CODE = C.DEPT_CODE
+		   AND A.SANCTN_YN!='C'
+	  ORDER BY A.CRTF_REQST_SN DESC
+	</select>
+	
+	<!-- 증명서 반려 -->
+	<update id="returnCrtf" parameterType="int">
+	   UPDATE CRTF
+	 	  SET SANCTN_YN='R'
+		WHERE CRTF_REQST_SN = #{crtfReqstSn}
+		  AND SANCTN_YN='N'
+	</update>
+	
+	<!-- 증명서 승인 -->
+	<update id="confmCrtf" parameterType="int">
+	   UPDATE CRTF
+		  SET SANCTN_YN='Y'
+		WHERE CRTF_REQST_SN = #{crtfReqstSn}
+		  AND SANCTN_YN='N'
+	</update>
+	
+	<!-- 증명서 신청목록 -->
+	<select id="adminCrtfPaging" resultType="hashMap" parameterType="hashMap">
+		SELECT T.*
+		FROM 
+			(SELECT 
+		            ROW_NUMBER() OVER (ORDER BY CRTF_REQST_SN DESC, REQST_DE DESC) AS RNUM,
+		            A.EMP_NO EMP_NO,
+		            B.EMP_NM EMP_NM,
+		            FN_GETCRTFSE(CRTF_SE_CODE) CRTF_SE_CODE,
+		            A.CRTF_CN CRTF_CN,
+	                A.CRTF_REQST_SN, 
+	                A.REQSTDOC_SJ, 
+				    SUBSTR(TO_CHAR(A.REQST_DE, 'YYYY"년"MM"월"DD"일"'),1,11) AS REQST_DE, 
+	                A.SANCTN_YN,
+				    B.BRTHDY, 
+	                B.ADRES1, 
+	                B.ADRES2, 
+	                D.DEPT_NM, 
+	                FN_GETCLSF(CLSF_CODE) AS CLSF_CODE, 
+	                B.ENCPN_DE,
+				    B.ENCPN_DE AS ENCPNDATE, 
+	                SUBSTR(TO_CHAR(A.REQST_DE, 'YYYY"-"MM"-"DD'),1,11) AS REQUESTDATE
+		       FROM CRTF A, EMP B, CMMNCODE C, DEPT D
+		      WHERE 1=1
+	            AND A.EMP_NO = B.EMP_NO
+	            AND B.DEPT_CODE = D.DEPT_CODE
+		        AND FN_GETCRTFSE(A.CRTF_SE_CODE) = C.CODE_NM
+		        AND A.SANCTN_YN!='C'
+	   	   ORDER BY A.CRTF_REQST_SN DESC, REQST_DE DESC) T
+	WHERE T.RNUM BETWEEN #{currentPage}*10-9 AND #{currentPage}*10
+	 ORDER BY T.CRTF_REQST_SN DESC
+	</select>
+	
+	<!-- 증명서 수 -->
+	<select id="adminCrtfPagingCount" resultType="int">
+		SELECT COUNT(*) FROM CRTF
+    	WHERE SANCTN_YN!='C'
+	</select>
+
+	<!-- 근무 형태 조회 -->
+	<select id="selectWorkStleCode" parameterType="String" resultType="String">
+		SELECT WORK_STLE_CODE
+		FROM DCLZ
+		WHERE EMP_NO=#{empNo}
+		AND WORK_DE=(SELECT TO_CHAR(SYSDATE, 'YYYY-MM-DD') FROM DUAL)
+	</select>
+
+</mapper>
+
+
+
+
+

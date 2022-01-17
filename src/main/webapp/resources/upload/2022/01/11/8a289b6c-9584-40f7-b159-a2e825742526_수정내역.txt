@@ -1,0 +1,74 @@
+EmpController - 다윤언니한테 수정파일 넘김
+EmpMapper
+EmpServiceImpl
+EmpService
+empMapper_SQL.xm
+
+author - AuthorController
+bbs - BbsController
+hr - HrController
+login - LoginController
+mtgr - MtgrController (mapper, service, sql 등 언니꺼 옮겨옴)
+mypage - MypageController
+schdul - SchdulController
+
+dclzController (아직 안 함)
+
+mtgr jsp파일 언니꺼 옮김 (체크박스 수정)
+
+<수정 목록>
+회의실 목록 cursor 수정
+
+
+===== jsp 수정 =====
+header.jsp - href 넣고 알림 삭제
+main.jsp - href 넣음
+
+===== modal 수정=====
+author.jsp
+
+- sanction -
+elctrnSanctnDetail.jsp
+elctrnSanctnDrftFormDetail.jsp
+elctrnSanctnDrftList.jsp
+elctrnSanctnList.jsp
+
+- schdul -
+calendarMain.jsp
+
+- bbs -
+libraryEditForm.jsp
+libraryList.jsp
+libraryWriteForm.jsp
+noticeEditForm.jsp
+noticeList.jsp
+noticeWriteForm.jsp
+
+- dclz - (수정 안 한 것들)
+bsrpSanction.jsp
+managedclz.jsp
+vcatnadminDetail.jsp
+vcatSanction.jsp
+
+- hr - (수정 안 한 것들)
+board.jsp
+crtfDetail.jsp
+retireEmpView.jsp
+sanctionOrganizationChart.jsp
+
+
+주현이 파일 합쳐야됨
+
+
+
+
+
+
+
+====== 수정 내역 ======
+임시비밀번호 발급받을 때 엔터 누르면 전송 안 됨
+마이페이지 비밀번호 변경 클릭하면 변경 안 됨
+퇴근 버튼 눌렀을 때 모달창 2줄로 변경
+411 나의 근태현황 데이터 넣기 (출퇴근)
+411 출장 신청함 데이터 넣기
+상신버튼 모달 화면 변경
